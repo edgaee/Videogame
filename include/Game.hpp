@@ -1,6 +1,7 @@
 #pragma once
 
 #include <SFML/Graphics.hpp>
+#include "Player.hpp"
 
 /**
  * Clase Game
@@ -33,6 +34,7 @@ private:
 
     // Miembros privados
     sf::RenderWindow mWindow; // La ventana de SFML
+    Player mPlayer;           // Instancia del jugador (Dexter)
     
     // Aquí agregaremos más adelante al Player, Enemy, etc.
 };

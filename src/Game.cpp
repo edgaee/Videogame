@@ -43,8 +43,8 @@ void Game::processEvents() {
 
 // Actualización de lógica
 void Game::update(sf::Time deltaTime) {
-    // Aquí actualizaremos al jugador, enemigos, física, etc.
-    // Por ahora está vacío.
+    // Actualizar al jugador
+    mPlayer.update(deltaTime);
 }
 
 // Renderizado (Dibujado)
@@ -53,7 +53,7 @@ void Game::render() {
     mWindow.clear(sf::Color::Black);
 
     // 2. Dibujar objetos (Aquí dibujaremos al Player, mapa, etc.)
-    // mWindow.draw(playerSprite); 
+    mPlayer.draw(mWindow);
 
     // 3. Mostrar lo dibujado en pantalla
     mWindow.display();
