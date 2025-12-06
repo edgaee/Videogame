@@ -2,6 +2,7 @@
 
 #include <SFML/Graphics.hpp>
 #include "Player.hpp"
+#include "Config.hpp"
 
 /**
  * Clase Game
@@ -32,9 +33,21 @@ private:
     // Dibujar todos los objetos en la ventana
     void render();
 
+    // Actualizar información de debug (FPS, posición del jugador)
+    void updateDebugInfo(sf::Time deltaTime);
+
     // Miembros privados
     sf::RenderWindow mWindow; // La ventana de SFML
     Player mPlayer;           // Instancia del jugador (Dexter)
+    
+    // Debug
+    sf::Font mDebugFont;
+    sf::Text mFpsText;
+    sf::Text mPositionText;
+    sf::Text mStateText;
+    sf::Clock mFrameClock;
+    int mFrameCount;
+    float mFpsUpdateTimer;
     
     // Aquí agregaremos más adelante al Player, Enemy, etc.
 };
