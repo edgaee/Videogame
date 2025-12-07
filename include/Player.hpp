@@ -44,6 +44,10 @@ private:
     // Método para obtener la escala necesaria para igualar alturas
     float getTextureScale(const sf::Texture* texture) const;
 
+    // Método para actualizar la textura sin cambiar de estado
+    // (usado cuando se activa/desactiva la jeringa en IDLE)
+    void updateTextureForCurrentState();
+
     sf::Sprite mSprite;
     
     // Texturas para movimiento normal
@@ -57,7 +61,8 @@ private:
     sf::Texture mTextureCrouch2;
     
     // Texturas para jeringa
-    sf::Texture mTextureSyringeIdle;
+    sf::Texture mTextureSyringeIdle;    // dexter_default.png (mismo que IDLE normal)
+    sf::Texture mTextureSyringeIdleStatic; // dexter_jeringa.png (cuando está quieto CON jeringa)
     sf::Texture mTextureSyringeRun1;
     sf::Texture mTextureSyringeRun2;
     sf::Texture mTextureSyringeCrouch;

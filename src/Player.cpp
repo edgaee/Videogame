@@ -29,6 +29,11 @@ Player::Player()
     // Para IDLE, usar la misma imagen dexter_default en ambos casos
     mTextureSyringeIdle.loadFromFile(std::string(Config::IMAGE_PATH) + "dexter_default.png");
     
+    // Para IDLE quieto CON jeringa, cargar dexter_jeringa.png
+    if (!mTextureSyringeIdleStatic.loadFromFile(std::string(Config::IMAGE_PATH) + "dexter_jeringa.png")) {
+        mTextureSyringeIdleStatic.loadFromFile(std::string(Config::IMAGE_PATH) + "dexter_default.png");
+    }
+    
     if (!mTextureSyringeRun1.loadFromFile(std::string(Config::IMAGE_PATH) + "dexter_paso1_jeringa.png")) {
         mTextureSyringeRun1.loadFromFile(std::string(Config::IMAGE_PATH) + "dexter_paso1.png");
     }
@@ -70,8 +75,8 @@ void Player::update(sf::Time deltaTime) {
         if (!spacePressed) {
             spacePressed = true;
             mHasSyringe = !mHasSyringe;  // Toggle jeringa (modo ataque)
-            // Actualizar textura del estado actual sin cambiar de estado
-            setState(mCurrentState);
+            // Actualizar la textura del estado actual sin cambiar de estado
+            updateTextureForCurrentState();
         }
     } else {
         spacePressed = false;
@@ -186,7 +191,7 @@ void Player::updateOrigin() {
 
 float Player::getTextureYOffset(const sf::Texture* texture) const {
     // Alinea todos los sprites por sus pies (parte inferior)
-    // Usa dexter_paso1.png como referencia de altura
+    // Usa dexter_paso1.png como referencia de altura base
     
     if (!texture) return 0.f;
     
@@ -209,6 +214,7 @@ float Player::getTextureScale(const sf::Texture* texture) const {
     // RUN1 (229x378) es la referencia para estados de movimiento
     // IDLE (340x733) se escala respecto a RUN1
     // CROUCH (192x242) se escala para ser ~50% de la altura de RUN1
+    // ATTACK se escala como IDLE para mantener proporcionalidad
     
     float runHeight = (float)mTextureRun1.getSize().y;  // 378 (referencia)
     float currentHeight = (float)texture->getSize().y;
@@ -216,8 +222,8 @@ float Player::getTextureScale(const sf::Texture* texture) const {
     if (currentHeight <= 0) return 1.f;
     
     // Si es IDLE, calcular escala respecto a RUN1
-    if (texture == &mTextureIdle || texture == &mTextureSyringeIdle) {
-        // Ambas IDLE (normal y jeringa) deben escalar al mismo tamaño final
+    if (texture == &mTextureIdle || texture == &mTextureSyringeIdle || texture == &mTextureSyringeIdleStatic) {
+        // Todas las IDLE (normal y jeringa) deben escalar al mismo tamaño final
         // Usamos la altura de RUN1 como referencia
         float referenceHeight = runHeight;  // 378 (altura de RUN1)
         return referenceHeight / currentHeight;
@@ -225,9 +231,11 @@ float Player::getTextureScale(const sf::Texture* texture) const {
     
     // Si es CROUCH, escalar para ser aproximadamente 65% de RUN1
     if (texture == &mTextureCrouch || texture == &mTextureSyringeCrouch) {
-        // CROUCH será 65% de la altura de RUN1
+        // Ambas versiones de CROUCH (normal y jeringa) deben tener el mismo tamaño final
+        // Usamos la altura de mTextureCrouch (versión normal) como referencia
+        float crouchReferenceHeight = (float)mTextureCrouch.getSize().y;  // Altura de CROUCH normal
         float targetHeight = runHeight * 0.65f;
-        return targetHeight / currentHeight;  // (378 * 0.65) / 242 ≈ 1.02
+        return targetHeight / crouchReferenceHeight;  // Escala basada en CROUCH normal
     }
     
     return 1.f;
@@ -268,7 +276,8 @@ void Player::setState(PlayerState newState) {
             // Actualizar origen cuando se entra en estado IDLE
             // Usar textura de jeringa si la tiene
             if (mHasSyringe) {
-                mSprite.setTexture(mTextureSyringeIdle);
+                // Cuando está quieto con jeringa, usar la imagen dexter_jeringa.png
+                mSprite.setTexture(mTextureSyringeIdleStatic);
             } else {
                 mSprite.setTexture(mTextureIdle);
             }
@@ -287,6 +296,33 @@ void Player::setState(PlayerState newState) {
             updateOrigin();
         }
     }
+}
+
+void Player::updateTextureForCurrentState() {
+    // Actualizar la textura basado en el estado actual sin cambiar de estado
+    // Esto se usa cuando se activa/desactiva la jeringa mientras está en IDLE
+    
+    if (mCurrentState == PlayerState::IDLE) {
+        if (mHasSyringe) {
+            // Cuando está quieto con jeringa, usar la imagen dexter_jeringa.png
+            mSprite.setTexture(mTextureSyringeIdleStatic);
+        } else {
+            mSprite.setTexture(mTextureIdle);
+        }
+        float idleScale = getTextureScale(mSprite.getTexture());
+        mSprite.setScale(mFacingLeft ? -idleScale : idleScale, idleScale);
+        updateOrigin();
+    } else if (mCurrentState == PlayerState::CROUCHING) {
+        if (mHasSyringe) {
+            mSprite.setTexture(mTextureSyringeCrouch);
+        } else {
+            mSprite.setTexture(mTextureCrouch);
+        }
+        float crouchScale = getTextureScale(mSprite.getTexture());
+        mSprite.setScale(mFacingLeft ? -crouchScale : crouchScale, crouchScale);
+        updateOrigin();
+    }
+    // Si está en RUNNING, no hacer nada aquí (la animación lo maneja)
 }
 
 sf::Vector2f Player::getPosition() const {
