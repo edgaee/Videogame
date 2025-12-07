@@ -8,7 +8,11 @@ Player::Player()
       mCurrentState(PlayerState::IDLE),
       mFacingLeft(false),
       mPreviousFacingLeft(false),
-      mHasSyringe(false)
+      mHasSyringe(false),
+      mIsInSyringeAttack(false),
+      mSyringeAttackFrame(0),
+      mPreviousStateBeforeAttack(PlayerState::IDLE),
+      mShouldDisableSyringeAfterAttack(false)
 {
     // Cargar texturas para movimiento normal
     bool success = true;
@@ -44,6 +48,20 @@ Player::Player()
         mTextureSyringeCrouch.loadFromFile(std::string(Config::IMAGE_PATH) + "dexter_agachado.png");
     }
     
+    // Cargar texturas para ataque con jeringa (4 frames de animación)
+    if (!mTextureSyringeAttack1.loadFromFile(std::string(Config::IMAGE_PATH) + "dexter_jeringa_ataque1.png")) {
+        mTextureSyringeAttack1.loadFromFile(std::string(Config::IMAGE_PATH) + "dexter_default.png");
+    }
+    if (!mTextureSyringeAttack2.loadFromFile(std::string(Config::IMAGE_PATH) + "dexter_jeringa_ataque2.png")) {
+        mTextureSyringeAttack2.loadFromFile(std::string(Config::IMAGE_PATH) + "dexter_default.png");
+    }
+    if (!mTextureSyringeAttack3.loadFromFile(std::string(Config::IMAGE_PATH) + "dexter_jeringa_ataque3.png")) {
+        mTextureSyringeAttack3.loadFromFile(std::string(Config::IMAGE_PATH) + "dexter_default.png");
+    }
+    if (!mTextureSyringeAttack4.loadFromFile(std::string(Config::IMAGE_PATH) + "dexter_jeringa_ataque4.png")) {
+        mTextureSyringeAttack4.loadFromFile(std::string(Config::IMAGE_PATH) + "dexter_default.png");
+    }
+    
     // Debug: mostrar tamaños de texturas
     std::cout << "Tamaños de texturas:" << std::endl;
     std::cout << "  IDLE: " << mTextureIdle.getSize().x << "x" << mTextureIdle.getSize().y << std::endl;
@@ -69,6 +87,62 @@ void Player::update(sf::Time deltaTime) {
     sf::Vector2f movement(0.f, 0.f);
     bool isMoving = false;
     
+    // Detectar tecla de ataque con jeringa (C) - solo funciona si tiene jeringa activa
+    static bool cPressed = false;
+    if (sf::Keyboard::isKeyPressed(sf::Keyboard::C)) {
+        if (!cPressed && mHasSyringe && !mIsInSyringeAttack) {
+            cPressed = true;
+            // Iniciar ataque con jeringa
+            mIsInSyringeAttack = true;
+            mSyringeAttackFrame = 0;
+            mAnimationTimer = 0.f;
+            mPreviousStateBeforeAttack = mCurrentState;  // Guardar estado actual
+        }
+    } else {
+        cPressed = false;
+    }
+    
+    // Si está en ataque con jeringa, manejar animación
+    if (mIsInSyringeAttack) {
+        // Mostrar la textura actual del frame
+        const sf::Texture* attackTexture = nullptr;
+        if (mSyringeAttackFrame == 0) attackTexture = &mTextureSyringeAttack1;
+        else if (mSyringeAttackFrame == 1) attackTexture = &mTextureSyringeAttack2;
+        else if (mSyringeAttackFrame == 2) attackTexture = &mTextureSyringeAttack3;
+        else if (mSyringeAttackFrame == 3) attackTexture = &mTextureSyringeAttack4;
+        
+        if (attackTexture) {
+            mSprite.setTexture(*attackTexture);
+            float attackScale = getTextureScale(attackTexture);
+            // Aplicar orientación según la dirección (flip horizontal si mira izquierda)
+            mSprite.setScale(mFacingLeft ? -attackScale : attackScale, attackScale);
+            updateOrigin();
+        }
+        
+        mAnimationTimer += deltaTime.asSeconds();
+        
+        // Cada frame dura 0.25 segundos (más largo que la animación de corrida, para mejor visualización)
+        if (mAnimationTimer >= 0.25f) {
+            mAnimationTimer = 0.f;
+            mSyringeAttackFrame++;
+            
+            // Si terminó la animación (4 frames), regresar a IDLE con jeringa.png
+            if (mSyringeAttackFrame >= 4) {
+                mIsInSyringeAttack = false;
+                mSyringeAttackFrame = 0;
+                // Regresar a IDLE con jeringa activa (mostrará dexter_jeringa.png)
+                setState(PlayerState::IDLE);
+            }
+        }
+        
+        // Aplicar offset Y para alineación
+        clampToBounds();
+        sf::Vector2f currentPos = mSprite.getPosition();
+        float yOffset = getTextureYOffset(mSprite.getTexture());
+        mSprite.setPosition(currentPos.x, Config::PLAYER_INITIAL_Y + yOffset);
+        return;
+    }
+    
     // Detectar tecla de jeringa (Space) - toggle modo ataque
     static bool spacePressed = false;
     if (sf::Keyboard::isKeyPressed(sf::Keyboard::Space)) {
@@ -90,20 +164,45 @@ void Player::update(sf::Time deltaTime) {
         if (mCurrentState == PlayerState::CROUCHING) {
             setState(PlayerState::IDLE);
         }
-        
-        // Detectar teclas A (Izquierda) y D (Derecha)
-        if (sf::Keyboard::isKeyPressed(sf::Keyboard::A)) {
+    }
+    
+    // Detectar cambio de dirección y aplicar inmediatamente
+    bool directionChanged = false;
+    if (sf::Keyboard::isKeyPressed(sf::Keyboard::A)) {
+        if (mFacingLeft != true) {
+            directionChanged = true;
+        }
+        mFacingLeft = true;
+        // Solo permitir movimiento si NO está agachado
+        if (mCurrentState != PlayerState::CROUCHING) {
             movement.x -= mSpeed;
             isMoving = true;
-            mFacingLeft = true;
         }
-        else if (sf::Keyboard::isKeyPressed(sf::Keyboard::D)) {
+    }
+    else if (sf::Keyboard::isKeyPressed(sf::Keyboard::D)) {
+        if (mFacingLeft != false) {
+            directionChanged = true;
+        }
+        mFacingLeft = false;
+        // Solo permitir movimiento si NO está agachado
+        if (mCurrentState != PlayerState::CROUCHING) {
             movement.x += mSpeed;
             isMoving = true;
-            mFacingLeft = false;
         }
-
-        // Si está en estado de agacharse, pasar a corriendo
+    }
+    
+    // Aplicar cambio de dirección inmediatamente
+    if (directionChanged) {
+        float spriteScale = getTextureScale(mSprite.getTexture());
+        mSprite.setScale(mFacingLeft ? -spriteScale : spriteScale, spriteScale);
+        // Aplicar offset Y después de cambiar escala para mantener alineación
+        sf::Vector2f currentPos = mSprite.getPosition();
+        float yOffset = getTextureYOffset(mSprite.getTexture());
+        mSprite.setPosition(currentPos.x, Config::PLAYER_INITIAL_Y + yOffset);
+    }
+    
+    // Cambios de estado para movimiento (solo si no está agachado)
+    if (mCurrentState != PlayerState::CROUCHING) {
         if (isMoving && mCurrentState == PlayerState::IDLE) {
             setState(PlayerState::RUNNING);
         } else if (!isMoving && mCurrentState == PlayerState::RUNNING) {
@@ -111,23 +210,8 @@ void Player::update(sf::Time deltaTime) {
         }
     }
 
-    // Detectar cambio de dirección y actualizar escala inmediatamente
-    if (mFacingLeft != mPreviousFacingLeft && mCurrentState == PlayerState::RUNNING) {
-        // La dirección cambió mientras se está corriendo
-        mPreviousFacingLeft = mFacingLeft;
-        mSprite.setScale(mFacingLeft ? -1.f : 1.f, 1.f);
-    } else if (mCurrentState != PlayerState::RUNNING) {
-        // Actualizar la dirección anterior cuando no estamos corriendo
-        mPreviousFacingLeft = mFacingLeft;
-    }
-
     // Aplicar movimiento
-    if (mCurrentState == PlayerState::CROUCHING) {
-        // No se mueve mucho si está agachado
-        mSprite.move(movement * (Config::CROUCH_SPEED / Config::PLAYER_SPEED) * deltaTime.asSeconds());
-    } else {
-        mSprite.move(movement * deltaTime.asSeconds());
-    }
+    mSprite.move(movement * deltaTime.asSeconds());
 
     // Mantener al jugador dentro de los límites de la pantalla
     clampToBounds();
@@ -227,6 +311,18 @@ float Player::getTextureScale(const sf::Texture* texture) const {
         // Usamos la altura de RUN1 como referencia
         float referenceHeight = runHeight;  // 378 (altura de RUN1)
         return referenceHeight / currentHeight;
+    }
+    
+    // Si es ataque con jeringa, escalar como IDLE para mantener consistencia
+    if (texture == &mTextureSyringeAttack1 || texture == &mTextureSyringeAttack2 || texture == &mTextureSyringeAttack4) {
+        float referenceHeight = runHeight;  // 378 (altura de RUN1)
+        return referenceHeight / currentHeight;
+    }
+    
+    // Si es la tercera imagen de ataque (la más grande), escalar a 80% para que se vea completa
+    if (texture == &mTextureSyringeAttack3) {
+        float targetHeight = runHeight * 0.80f;
+        return targetHeight / currentHeight;
     }
     
     // Si es CROUCH, escalar para ser aproximadamente 65% de RUN1

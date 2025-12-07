@@ -66,12 +66,24 @@ private:
     sf::Texture mTextureSyringeRun1;
     sf::Texture mTextureSyringeRun2;
     sf::Texture mTextureSyringeCrouch;
+    
+    // Texturas para ataque con jeringa (animación de 4 frames)
+    sf::Texture mTextureSyringeAttack1;
+    sf::Texture mTextureSyringeAttack2;
+    sf::Texture mTextureSyringeAttack3;
+    sf::Texture mTextureSyringeAttack4;
 
     float mSpeed; // Velocidad de movimiento en píxeles por segundo
     
     // Variables de animación
     float mAnimationTimer; // Acumulador de tiempo para cambiar frames
     bool mIsRunFrame1;     // Estado para alternar entre paso1 y paso2
+    
+    // Variables para ataque con jeringa
+    bool mIsInSyringeAttack; // Si está ejecutando el ataque con jeringa
+    int mSyringeAttackFrame; // Frame actual del ataque (0, 1, 2, 3)
+    PlayerState mPreviousStateBeforeAttack; // Estado antes de iniciar el ataque
+    bool mShouldDisableSyringeAfterAttack; // Flag para desactivar jeringa después del ataque
     
     // Estado del jugador
     PlayerState mCurrentState;
