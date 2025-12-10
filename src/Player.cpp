@@ -1,4 +1,5 @@
 #include "Player.hpp"
+#include "Platform.hpp"
 #include <iostream>
 
 Player::Player() 
@@ -57,7 +58,7 @@ Player::Player()
     setState(PlayerState::IDLE);
 }
 
-void Player::update(sf::Time deltaTime) {
+void Player::update(sf::Time deltaTime, const std::vector<Platform>& platforms) {
     float dt = deltaTime.asSeconds();
 
     // Lógica de Ataque (Bloqueante)
@@ -79,7 +80,7 @@ void Player::update(sf::Time deltaTime) {
     }
 
     handleInput(dt);
-    updatePhysics(dt);
+    updatePhysics(dt, platforms);
     updateAnimation(dt);
 }
 
@@ -153,14 +154,68 @@ void Player::handleInput(float dt) {
     }
 }
 
-void Player::updatePhysics(float dt) {
-    mVelocity.y += mGravity * dt;
+void Player::updatePhysics(float dt, const std::vector<Platform>& platforms) {
+    // 1. Movimiento en X
+    float moveX = mVelocity.x * dt;
+    mSprite.move(moveX, 0.f);
+    
+    // Colisión X
+    sf::FloatRect playerBounds = mSprite.getGlobalBounds();
+    for (const auto& platform : platforms) {
+        sf::FloatRect platBounds = platform.getBounds();
+        if (playerBounds.intersects(platBounds)) {
+            // Resolver colisión X
+            if (moveX > 0) { // Moviendo derecha
+                mSprite.setPosition(platBounds.left - playerBounds.width / 2.f, mSprite.getPosition().y); // Ajuste por origen centrado en X
+            } else if (moveX < 0) { // Moviendo izquierda
+                mSprite.setPosition(platBounds.left + platBounds.width + playerBounds.width / 2.f, mSprite.getPosition().y);
+            }
+            mVelocity.x = 0.f;
+        }
+    }
 
+    // 2. Movimiento en Y
+    mVelocity.y += mGravity * dt;
+    
     if (mCurrentState == PlayerState::PRE_JUMP) {
         mPreJumpTimer -= dt;
         if (mPreJumpTimer <= 0.f) {
             mVelocity.y = mJumpForce;
             setState(PlayerState::JUMPING);
+        }
+    }
+
+    float moveY = mVelocity.y * dt;
+    mSprite.move(0.f, moveY);
+
+    // Colisión Y (Plataformas)
+    playerBounds = mSprite.getGlobalBounds(); // Actualizar bounds tras mover Y
+    bool onGround = false;
+
+    for (const auto& platform : platforms) {
+        sf::FloatRect platBounds = platform.getBounds();
+        if (playerBounds.intersects(platBounds)) {
+            // Resolver colisión Y
+            if (moveY > 0) { // Cayendo
+                // Colocamos al jugador justo encima de la plataforma
+                // El origen del sprite está en (width/2, height), es decir, en los pies.
+                // Por lo tanto, la posición Y del sprite debe ser igual al top de la plataforma.
+                mSprite.setPosition(mSprite.getPosition().x, platBounds.top);
+                mVelocity.y = 0.f;
+                onGround = true;
+                
+                if (mCurrentState == PlayerState::JUMPING) {
+                    setState(PlayerState::LANDING);
+                    mLandingTimer = 0.1f;
+                }
+            } else if (moveY < 0) { // Saltando hacia arriba (golpeando techo)
+                // Colocamos al jugador justo debajo de la plataforma
+                // Posición Y = platBounds.top + platBounds.height + spriteHeight
+                // Como el origen es bottom, es platBounds.bottom + height? No.
+                // Bounds.top es la parte superior. Bounds.top + height es la parte inferior.
+                mSprite.setPosition(mSprite.getPosition().x, platBounds.top + platBounds.height + playerBounds.height);
+                mVelocity.y = 0.f;
+            }
         }
     }
 
@@ -171,12 +226,11 @@ void Player::updatePhysics(float dt) {
         }
     }
 
-    mSprite.move(mVelocity * dt);
-
-    // Colisión con suelo
+    // Colisión con suelo base (fallback)
     if (mSprite.getPosition().y >= mGroundY) {
         mSprite.setPosition(mSprite.getPosition().x, mGroundY);
         mVelocity.y = 0.f;
+        onGround = true;
 
         if (mCurrentState == PlayerState::JUMPING) {
             setState(PlayerState::LANDING);

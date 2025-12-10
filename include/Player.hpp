@@ -1,6 +1,9 @@
 #pragma once
 #include <SFML/Graphics.hpp>
 #include "Config.hpp"
+#include <vector>
+
+class Platform; // Forward declaration
 
 // Estados del jugador
 enum class PlayerState {
@@ -18,7 +21,7 @@ public:
     Player();
     
     // Actualiza la posición del jugador basado en inputs y tiempo
-    void update(sf::Time deltaTime);
+    void update(sf::Time deltaTime, const std::vector<Platform>& platforms);
     
     // Dibuja el sprite del jugador en la ventana
     void draw(sf::RenderWindow& window);
@@ -32,7 +35,7 @@ public:
 private:
     // Métodos internos
     void handleInput(float dt);
-    void updatePhysics(float dt);
+    void updatePhysics(float dt, const std::vector<Platform>& platforms);
     void updateAnimation(float dt);
     void updateOrigin();
     void clampToBounds();

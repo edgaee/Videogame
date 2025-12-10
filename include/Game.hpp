@@ -2,7 +2,9 @@
 
 #include <SFML/Graphics.hpp>
 #include "Player.hpp"
+#include "Platform.hpp"
 #include "Config.hpp"
+#include <vector>
 
 /**
  * Clase Game
@@ -39,6 +41,7 @@ private:
     // Miembros privados
     sf::RenderWindow mWindow; // La ventana de SFML
     Player mPlayer;           // Instancia del jugador (Dexter)
+    std::vector<Platform> mPlatforms; // Plataformas del nivel
     
     // Debug
     sf::Font mDebugFont;

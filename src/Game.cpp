@@ -62,6 +62,20 @@ Game::Game()
         mPressEnterText.setOrigin(enterBounds.width / 2.f, 0.f);
         mPressEnterText.setPosition(Config::WINDOW_WIDTH / 2.f, Config::WINDOW_HEIGHT - 150.f);
     }
+
+    // Inicializar Plataformas
+    
+    // 1. Suelo largo abajo (Base)
+    mPlatforms.emplace_back(nullptr, sf::Vector2f(800.f, 50.f), sf::Vector2f(0.f, 550.f));
+
+    // 2. Plataforma izquierda (Más baja)
+    mPlatforms.emplace_back(nullptr, sf::Vector2f(200.f, 30.f), sf::Vector2f(50.f, 510.f));
+    
+    // 3. Plataforma derecha (Más baja)
+    mPlatforms.emplace_back(nullptr, sf::Vector2f(200.f, 30.f), sf::Vector2f(300.f, 430.f));
+
+    // 4. Pared de prueba (Bloque alto en el suelo a la derecha)
+    mPlatforms.emplace_back(nullptr, sf::Vector2f(50.f, 150.f), sf::Vector2f(600.f, 400.f));
 }
 
 // Destructor
@@ -107,7 +121,7 @@ void Game::processEvents() {
 void Game::update(sf::Time deltaTime) {
     // Solo actualizar el jugador si el juego ha comenzado
     if (mIsGameStarted) {
-        mPlayer.update(deltaTime);
+        mPlayer.update(deltaTime, mPlatforms);
     }
 }
 
@@ -165,6 +179,9 @@ void Game::render() {
         mWindow.draw(mPressEnterText);
     } else {
         // 2. Dibujar objetos (Aquí dibujaremos al Player, mapa, etc.)
+        for (auto& platform : mPlatforms) {
+            platform.draw(mWindow);
+        }
         mPlayer.draw(mWindow);
 
         // 3. Dibujar información de debug
