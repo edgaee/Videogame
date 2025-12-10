@@ -19,8 +19,8 @@ namespace Config {
     // === JUGADOR ===
     constexpr float PLAYER_SPEED = 400.f;        // Píxeles por segundo
     constexpr float ANIMATION_SPEED = 0.15f;     // Segundos por frame
-    constexpr float PLAYER_INITIAL_X = 640.f;    // Centro horizontal
-    constexpr float PLAYER_INITIAL_Y = 1000.f;   // Posición vertical
+    constexpr float PLAYER_INITIAL_X = 100.f;    // Centro horizontal (Lado izquierdo)
+    constexpr float PLAYER_INITIAL_Y = 500.f;    // Posición vertical (Aire para caer)
     constexpr float PLAYER_TARGET_HEIGHT = 150.f; // Altura visual objetivo
     constexpr float CROUCH_SPEED = 200.f;        // Velocidad al agacharse (píxeles por segundo)
 

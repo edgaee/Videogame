@@ -22,16 +22,23 @@ public:
     Player();
     
     // Actualiza la posición del jugador basado en inputs y tiempo
-    void update(sf::Time deltaTime, const std::vector<Platform>& platforms);
+    void update(sf::Time deltaTime);
     
     // Dibuja el sprite del jugador en la ventana
     void draw(sf::RenderWindow& window);
 
     // Obtiene la posición actual del jugador
     sf::Vector2f getPosition() const;
+    void setPosition(float x, float y);
     
     // Obtiene los límites del sprite
     sf::FloatRect getBounds() const;
+
+    // Física
+    sf::Vector2f getVelocity() const;
+    void setVelocity(float x, float y);
+    void move(float x, float y);
+    void setGrounded(bool grounded);
 
     // Obtiene el estado actual del jugador
     PlayerState getState() const;
@@ -43,7 +50,7 @@ public:
 private:
     // Métodos internos
     void handleInput(float dt);
-    void updatePhysics(float dt, const std::vector<Platform>& platforms);
+    void updatePhysics(float dt);
     void updateAnimation(float dt);
     void updateOrigin();
     void clampToBounds();
@@ -86,6 +93,7 @@ private:
     // Timers para salto
     float mPreJumpTimer;
     float mLandingTimer;
+    float mFallingTimer;
 
     // Variables de Jeringa
     bool mHasSyringe;

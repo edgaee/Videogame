@@ -2,6 +2,7 @@
 
 #include <SFML/Graphics.hpp>
 #include "Player.hpp"
+#include "Level.hpp"
 #include "Platform.hpp"
 #include "HidingSpot.hpp"
 #include "Config.hpp"
@@ -43,8 +44,7 @@ private:
     sf::RenderWindow mWindow; // La ventana de SFML
     sf::View mWorldView;      // Cámara del juego
     Player mPlayer;           // Instancia del jugador (Dexter)
-    std::vector<Platform> mPlatforms; // Plataformas del nivel
-    std::vector<HidingSpot> mHidingSpots; // Escondites
+    Level mLevel;             // Nivel actual
     
     // Debug
     sf::Font mDebugFont;

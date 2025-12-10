@@ -1,8 +1,7 @@
 #include "Game.hpp"
-#include "HidingSpot.hpp"
 #include <sstream>
 #include <iomanip>
-#include <cmath> // Para lerp (std::lerp es C++20, usaremos fórmula manual)
+#include <cmath> 
 
 // Constructor
 Game::Game() 
@@ -68,30 +67,8 @@ Game::Game()
         mPressEnterText.setPosition(Config::WINDOW_WIDTH / 2.f, Config::WINDOW_HEIGHT - 150.f);
     }
 
-    // Inicializar Plataformas
-    
-    // 1. Suelo largo abajo (Base) - Coincide con el suelo del jugador (Y=1000)
-    mPlatforms.emplace_back(nullptr, sf::Vector2f((float)Config::WORLD_WIDTH, 50.f), sf::Vector2f(0.f, 1000.f));
-
-    // 2. Plataforma izquierda (Muy baja, casi a nivel de suelo)
-    // Dexter mide 150px. Salto ~200px.
-    // Suelo: 1000. Plat 1: 900 (100px altura)
-    mPlatforms.emplace_back(nullptr, sf::Vector2f(200.f, 20.f), sf::Vector2f(150.f, 900.f));
-    
-    // 3. Plataforma derecha (Un poco más alta)
-    // Plat 1: 900. Plat 2: 750 (150px altura)
-    mPlatforms.emplace_back(nullptr, sf::Vector2f(200.f, 20.f), sf::Vector2f(450.f, 750.f));
-
-    // 4. Pared de prueba (Bloque alto en el suelo a la derecha)
-    // Altura 150px (igual que Dexter)
-    mPlatforms.emplace_back(nullptr, sf::Vector2f(50.f, 150.f), sf::Vector2f(800.f, 850.f));
-
-    // Inicializar Escondites
-    // Uno en el suelo cerca del inicio
-    mHidingSpots.emplace_back(sf::Vector2f(80.f, 150.f), sf::Vector2f(400.f, 850.f));
-    
-    // Otro en la plataforma derecha
-    mHidingSpots.emplace_back(sf::Vector2f(80.f, 150.f), sf::Vector2f(500.f, 600.f));
+    // Cargar Nivel
+    mLevel.loadLevel1();
 }
 
 // Destructor
@@ -136,13 +113,10 @@ void Game::processEvents() {
             if (mPlayer.isHidden()) {
                 mPlayer.setHidden(false);
             } else {
-                // Verificar si está en un escondite
-                for (const auto& spot : mHidingSpots) {
+                // Verificar si está en un escondite (Consultar al Nivel)
+                for (const auto& spot : mLevel.getHidingSpots()) {
                     if (spot.isPlayerInside(mPlayer)) {
                         mPlayer.setHidden(true);
-                        // Centrar al jugador en el escondite (opcional, pero se ve mejor)
-                        // sf::FloatRect spotBounds = spot.getBounds();
-                        // mPlayer.setPosition(spotBounds.left + spotBounds.width/2, spotBounds.top + spotBounds.height); 
                         break;
                     }
                 }
@@ -155,7 +129,16 @@ void Game::processEvents() {
 void Game::update(sf::Time deltaTime) {
     // Solo actualizar el jugador si el juego ha comenzado
     if (mIsGameStarted) {
-        mPlayer.update(deltaTime, mPlatforms);
+        float dt = deltaTime.asSeconds();
+        
+        // 1. Actualizar Player (Input, Animación, Gravedad)
+        mPlayer.update(deltaTime);
+        
+        // 2. Actualizar Nivel (Entidades)
+        mLevel.update(dt);
+        
+        // 3. Resolver Colisiones (Nivel mueve al Player)
+        mLevel.checkCollisions(mPlayer, dt);
 
         // Actualizar Cámara (Lerp)
         sf::Vector2f playerPos = mPlayer.getPosition();
@@ -244,18 +227,10 @@ void Game::render() {
         // Aplicar cámara del juego
         mWindow.setView(mWorldView);
 
-        // 2. Dibujar objetos (Aquí dibujaremos al Player, mapa, etc.)
+        // 2. Dibujar objetos (Delegar al Nivel)
+        mLevel.draw(mWindow);
         
-        // Dibujar escondites (detrás del jugador)
-        for (auto& spot : mHidingSpots) {
-            spot.draw(mWindow);
-        }
-
-        // Dibujar plataformas
-        for (auto& platform : mPlatforms) {
-            platform.draw(mWindow);
-        }
-
+        // Dibujar Player
         mPlayer.draw(mWindow);
         
         if (Config::DEBUG_MODE) {

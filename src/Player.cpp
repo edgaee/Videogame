@@ -19,12 +19,21 @@ Player::Player()
       mJumpForce(-900.f),
       mGroundY(Config::PLAYER_INITIAL_Y),
       mPreJumpTimer(0.f),
-      mLandingTimer(0.f)
+      mLandingTimer(0.f),
+      mFallingTimer(0.f)
 {
     std::string path = Config::IMAGE_PATH;
 
     // 1. Movimiento Normal
-    mTextureIdle.loadFromFile(path + "dexter_default.png");
+    if (!mTextureIdle.loadFromFile(path + "dexter_default.png")) {
+        std::cerr << "Error: No se pudo cargar dexter_default.png" << std::endl;
+        // Fallback visual: Cuadrado Rojo
+        mTextureIdle.create(50, 150);
+        sf::Image img;
+        img.create(50, 150, sf::Color::Red);
+        mTextureIdle.update(img);
+    }
+
     mTextureRun1.loadFromFile(path + "dexter_paso1.png");
     mTextureRun2.loadFromFile(path + "dexter_paso2.png");
     
@@ -58,7 +67,7 @@ Player::Player()
     setState(PlayerState::IDLE);
 }
 
-void Player::update(sf::Time deltaTime, const std::vector<Platform>& platforms) {
+void Player::update(sf::Time deltaTime) {
     float dt = deltaTime.asSeconds();
 
     // Lógica de Ataque (Bloqueante)
@@ -80,7 +89,7 @@ void Player::update(sf::Time deltaTime, const std::vector<Platform>& platforms) 
     }
 
     handleInput(dt);
-    updatePhysics(dt, platforms);
+    updatePhysics(dt);
     updateAnimation(dt);
 }
 
@@ -159,49 +168,31 @@ void Player::handleInput(float dt) {
     }
 }
 
-void Player::updatePhysics(float dt, const std::vector<Platform>& platforms) {
-    // 1. Movimiento en X - Verificar colisión ANTES de mover
-    float moveX = mVelocity.x * dt;
-    
-    if (moveX != 0.f) {
-        // Crear bounds proyectados para verificar colisión antes de mover
-        sf::FloatRect currentBounds = mSprite.getGlobalBounds();
-        sf::FloatRect projectedBounds = currentBounds;
-        projectedBounds.left += moveX;
-        
-        bool blockedX = false;
-        float correctedX = mSprite.getPosition().x + moveX;
-        
-        for (const auto& platform : platforms) {
-            sf::FloatRect platBounds = platform.getBounds();
-            sf::FloatRect intersection;
-            if (projectedBounds.intersects(platBounds, intersection)) {
-                // Ignorar colisiones donde la superposición vertical es mínima (probablemente suelo/techo)
-                if (intersection.height < 10.f) continue;
-                
-                blockedX = true;
-                // Calcular posición correcta pegado a la pared
-                if (moveX > 0) { // Moviendo derecha
-                    correctedX = platBounds.left - currentBounds.width / 2.f;
-                } else { // Moviendo izquierda
-                    correctedX = platBounds.left + platBounds.width + currentBounds.width / 2.f;
-                }
-                mVelocity.x = 0.f;
-                break;
-            }
-        }
-        
-        // Solo mover si no está bloqueado, o mover a posición corregida
-        if (blockedX) {
-            mSprite.setPosition(correctedX, mSprite.getPosition().y);
-        } else {
-            mSprite.move(moveX, 0.f);
-        }
-    }
-
-    // 2. Movimiento en Y
+void Player::updatePhysics(float dt) {
+    // 1. Gravedad
     mVelocity.y += mGravity * dt;
     
+    // Detectar caída libre (Walking off ledge) con umbral de tiempo
+    // Si la velocidad es positiva (cayendo) y no estamos ya en estado de salto/aterrizaje
+    if (mVelocity.y > 100.f) { // Umbral de velocidad mínima para considerar caída
+        mFallingTimer += dt;
+        
+        // Si lleva cayendo más de 0.2 segundos (ajustable), cambiar a animación de salto
+        if (mFallingTimer > 0.2f) {
+            if (mCurrentState != PlayerState::JUMPING && 
+                mCurrentState != PlayerState::PRE_JUMP && 
+                mCurrentState != PlayerState::LANDING && 
+                mCurrentState != PlayerState::HIDING) {
+                
+                setState(PlayerState::JUMPING);
+            }
+        }
+    } else {
+        // Resetear timer si no está cayendo
+        mFallingTimer = 0.f;
+    }
+
+    // 2. Salto (Pre-jump delay)
     if (mCurrentState == PlayerState::PRE_JUMP) {
         mPreJumpTimer -= dt;
         if (mPreJumpTimer <= 0.f) {
@@ -209,65 +200,42 @@ void Player::updatePhysics(float dt, const std::vector<Platform>& platforms) {
             setState(PlayerState::JUMPING);
         }
     }
-
-    float moveY = mVelocity.y * dt;
-    mSprite.move(0.f, moveY);
-
-    // Colisión Y (Plataformas)
-    sf::FloatRect playerBounds = mSprite.getGlobalBounds(); // Actualizar bounds tras mover Y
-    sf::FloatRect intersection;
-    bool onGround = false;
-
-    for (const auto& platform : platforms) {
-        sf::FloatRect platBounds = platform.getBounds();
-        if (playerBounds.intersects(platBounds, intersection)) {
-            // Ignorar colisiones donde la superposición horizontal es mínima (probablemente pared)
-            if (intersection.width < 10.f) continue;
-
-            // Resolver colisión Y
-            if (moveY > 0) { // Cayendo
-                // Colocamos al jugador justo encima de la plataforma
-                // El origen del sprite está en (width/2, height), es decir, en los pies.
-                // Por lo tanto, la posición Y del sprite debe ser igual al top de la plataforma.
-                mSprite.setPosition(mSprite.getPosition().x, platBounds.top);
-                mVelocity.y = 0.f;
-                onGround = true;
-                
-                if (mCurrentState == PlayerState::JUMPING) {
-                    setState(PlayerState::LANDING);
-                    mLandingTimer = 0.1f;
-                }
-            } else if (moveY < 0) { // Saltando hacia arriba (golpeando techo)
-                // Colocamos al jugador justo debajo de la plataforma
-                // Posición Y = platBounds.top + platBounds.height + spriteHeight
-                // Como el origen es bottom, es platBounds.bottom + height? No.
-                // Bounds.top es la parte superior. Bounds.top + height es la parte inferior.
-                mSprite.setPosition(mSprite.getPosition().x, platBounds.top + platBounds.height + playerBounds.height);
-                mVelocity.y = 0.f;
-            }
-        }
-    }
-
+    
+    // Nota: El movimiento real (x, y) y las colisiones ahora se manejan en Level::checkCollisions
+    // Aquí solo actualizamos estados dependientes del tiempo como el aterrizaje
+    
     if (mCurrentState == PlayerState::LANDING) {
         mLandingTimer -= dt;
         if (mLandingTimer <= 0.f) {
             setState(PlayerState::IDLE);
         }
     }
+}
 
-    // Colisión con suelo base (fallback)
-    if (mSprite.getPosition().y >= mGroundY) {
-        mSprite.setPosition(mSprite.getPosition().x, mGroundY);
-        mVelocity.y = 0.f;
-        onGround = true;
+sf::Vector2f Player::getVelocity() const {
+    return mVelocity;
+}
 
+void Player::setVelocity(float x, float y) {
+    mVelocity.x = x;
+    mVelocity.y = y;
+}
+
+void Player::move(float x, float y) {
+    mSprite.move(x, y);
+}
+
+void Player::setPosition(float x, float y) {
+    mSprite.setPosition(x, y);
+}
+
+void Player::setGrounded(bool grounded) {
+    if (grounded) {
         if (mCurrentState == PlayerState::JUMPING) {
             setState(PlayerState::LANDING);
             mLandingTimer = 0.1f;
         }
     }
-
-    clampToBounds();
 }
 
 void Player::updateAnimation(float dt) {
