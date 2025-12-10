@@ -13,7 +13,8 @@ enum class PlayerState {
     CROUCH_WALKING, // Caminando agachado
     PRE_JUMP,       // Preparación salto
     JUMPING,        // En el aire
-    LANDING         // Aterrizaje
+    LANDING,        // Aterrizaje
+    HIDING          // Escondido
 };
 
 class Player {
@@ -28,9 +29,16 @@ public:
 
     // Obtiene la posición actual del jugador
     sf::Vector2f getPosition() const;
+    
+    // Obtiene los límites del sprite
+    sf::FloatRect getBounds() const;
 
     // Obtiene el estado actual del jugador
     PlayerState getState() const;
+    
+    // Establece si el jugador está escondido
+    void setHidden(bool hidden);
+    bool isHidden() const;
 
 private:
     // Métodos internos
