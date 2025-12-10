@@ -6,16 +6,29 @@
 Game::Game() 
     : mWindow(sf::VideoMode(Config::WINDOW_WIDTH, Config::WINDOW_HEIGHT), Config::WINDOW_TITLE),
       mFrameCount(0),
-      mFpsUpdateTimer(0.f)
+      mFpsUpdateTimer(0.f),
+      mIsGameStarted(false)
 {
     // Limitar el framerate a 60 FPS para consistencia
     mWindow.setFramerateLimit(Config::FPS_LIMIT);
 
-    // Cargar fuente para debug
-    if (Config::DEBUG_MODE) {
-        if (!mDebugFont.loadFromFile(Config::DEBUG_FONT)) {
-            // Si falla la fuente, continuamos sin debug visual
-        } else {
+    // Configurar Pantalla de Inicio
+    // Cargar imagen dexter_jeringa.png
+    if (mStartScreenTexture.loadFromFile(std::string(Config::IMAGE_PATH) + "dexter_jeringa.png")) {
+        mStartScreenSprite.setTexture(mStartScreenTexture);
+        
+        // Centrar el sprite en la pantalla
+        sf::FloatRect bounds = mStartScreenSprite.getLocalBounds();
+        mStartScreenSprite.setOrigin(bounds.width / 2.f, bounds.height / 2.f);
+        mStartScreenSprite.setPosition(Config::WINDOW_WIDTH / 2.f, Config::WINDOW_HEIGHT / 2.f);
+    }
+
+    // Cargar fuente para debug y título
+    if (!mDebugFont.loadFromFile(Config::DEBUG_FONT)) {
+        // Si falla la fuente, continuamos sin debug visual
+    } else {
+        // Configurar textos de debug
+        if (Config::DEBUG_MODE) {
             mFpsText.setFont(mDebugFont);
             mFpsText.setCharacterSize(16);
             mFpsText.setFillColor(sf::Color::Green);
@@ -26,6 +39,28 @@ Game::Game()
             mStateText.setFillColor(sf::Color::Cyan);
             mStateText.setPosition(10.f, 35.f);
         }
+        
+        // Configurar texto de título "Dexter Game" para pantalla de inicio
+        mTitleText.setFont(mDebugFont);
+        mTitleText.setString("Dexter Game");
+        mTitleText.setCharacterSize(80);
+        mTitleText.setFillColor(sf::Color::White);
+        
+        // Centrar texto en la parte superior
+        sf::FloatRect textBounds = mTitleText.getLocalBounds();
+        mTitleText.setOrigin(textBounds.width / 2.f, 0.f);
+        mTitleText.setPosition(Config::WINDOW_WIDTH / 2.f, 50.f);
+        
+        // Configurar texto de instrucción "Presiona ENTER para comenzar"
+        mPressEnterText.setFont(mDebugFont);
+        mPressEnterText.setString("Presiona ENTER para comenzar");
+        mPressEnterText.setCharacterSize(30);
+        mPressEnterText.setFillColor(sf::Color::Yellow);
+        
+        // Centrar texto de instrucción en la parte inferior
+        sf::FloatRect enterBounds = mPressEnterText.getLocalBounds();
+        mPressEnterText.setOrigin(enterBounds.width / 2.f, 0.f);
+        mPressEnterText.setPosition(Config::WINDOW_WIDTH / 2.f, Config::WINDOW_HEIGHT - 150.f);
     }
 }
 
@@ -60,13 +95,20 @@ void Game::processEvents() {
         if (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::Escape) {
             mWindow.close();
         }
+        
+        // Detectar ENTER para iniciar el juego desde la pantalla de inicio
+        if (!mIsGameStarted && event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::Return) {
+            mIsGameStarted = true;
+        }
     }
 }
 
 // Actualización de lógica
 void Game::update(sf::Time deltaTime) {
-    // Actualizar al jugador
-    mPlayer.update(deltaTime);
+    // Solo actualizar el jugador si el juego ha comenzado
+    if (mIsGameStarted) {
+        mPlayer.update(deltaTime);
+    }
 }
 
 // Actualizar información de debug
@@ -111,13 +153,25 @@ void Game::render() {
     // 1. Limpiar la ventana con un color (negro por defecto)
     mWindow.clear(Config::BACKGROUND_COLOR);
 
-    // 2. Dibujar objetos (Aquí dibujaremos al Player, mapa, etc.)
-    mPlayer.draw(mWindow);
+    if (!mIsGameStarted) {
+        // Pantalla de Inicio
+        // Dibujar imagen de dexter_jeringa centrada
+        mWindow.draw(mStartScreenSprite);
+        
+        // Dibujar título "Dexter Game"
+        mWindow.draw(mTitleText);
+        
+        // Dibujar texto "Presiona ENTER para comenzar"
+        mWindow.draw(mPressEnterText);
+    } else {
+        // 2. Dibujar objetos (Aquí dibujaremos al Player, mapa, etc.)
+        mPlayer.draw(mWindow);
 
-    // 3. Dibujar información de debug
-    if (Config::DEBUG_MODE) {
-        mWindow.draw(mFpsText);
-        mWindow.draw(mStateText);
+        // 3. Dibujar información de debug
+        if (Config::DEBUG_MODE) {
+            mWindow.draw(mFpsText);
+            mWindow.draw(mStateText);
+        }
     }
 
     // 4. Mostrar lo dibujado en pantalla

@@ -48,6 +48,11 @@ private:
     sf::Clock mFrameClock;
     int mFrameCount;
     float mFpsUpdateTimer;
-    
-    // Aquí agregaremos más adelante al Player, Enemy, etc.
+
+    // Pantalla de Inicio
+    bool mIsGameStarted;
+    sf::Texture mStartScreenTexture;
+    sf::Sprite mStartScreenSprite;
+    sf::Text mTitleText;
+    sf::Text mPressEnterText;
 };
