@@ -12,6 +12,7 @@ namespace Config {
     // === VENTANA ===
     constexpr int WINDOW_WIDTH  = 2560;
     constexpr int WINDOW_HEIGHT = 1440;
+    constexpr int WORLD_WIDTH   = 4000; // Ancho total del nivel
     constexpr int FPS_LIMIT = 165;
     constexpr const char* WINDOW_TITLE = "Dexter: Dark Passenger";
 
@@ -20,6 +21,7 @@ namespace Config {
     constexpr float ANIMATION_SPEED = 0.15f;     // Segundos por frame
     constexpr float PLAYER_INITIAL_X = 640.f;    // Centro horizontal
     constexpr float PLAYER_INITIAL_Y = 1000.f;   // Posición vertical
+    constexpr float PLAYER_TARGET_HEIGHT = 150.f; // Altura visual objetivo
     constexpr float CROUCH_SPEED = 200.f;        // Velocidad al agacharse (píxeles por segundo)
 
     // === ASSETS === 

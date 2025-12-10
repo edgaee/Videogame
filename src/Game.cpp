@@ -1,6 +1,8 @@
 #include "Game.hpp"
+#include "HidingSpot.hpp"
 #include <sstream>
 #include <iomanip>
+#include <cmath> // Para lerp (std::lerp es C++20, usaremos fórmula manual)
 
 // Constructor
 Game::Game() 
@@ -11,6 +13,9 @@ Game::Game()
 {
     // Limitar el framerate a 60 FPS para consistencia
     mWindow.setFramerateLimit(Config::FPS_LIMIT);
+
+    // Inicializar Vista (Cámara)
+    mWorldView = mWindow.getDefaultView();
 
     // Configurar Pantalla de Inicio
     // Cargar imagen dexter_jeringa.png
@@ -66,16 +71,27 @@ Game::Game()
     // Inicializar Plataformas
     
     // 1. Suelo largo abajo (Base) - Coincide con el suelo del jugador (Y=1000)
-    mPlatforms.emplace_back(nullptr, sf::Vector2f(2560.f, 50.f), sf::Vector2f(0.f, 1000.f));
+    mPlatforms.emplace_back(nullptr, sf::Vector2f((float)Config::WORLD_WIDTH, 50.f), sf::Vector2f(0.f, 1000.f));
 
     // 2. Plataforma izquierda (Muy baja, casi a nivel de suelo)
-    mPlatforms.emplace_back(nullptr, sf::Vector2f(200.f, 30.f), sf::Vector2f(150.f, 920.f));
+    // Dexter mide 150px. Salto ~200px.
+    // Suelo: 1000. Plat 1: 900 (100px altura)
+    mPlatforms.emplace_back(nullptr, sf::Vector2f(200.f, 20.f), sf::Vector2f(150.f, 900.f));
     
     // 3. Plataforma derecha (Un poco más alta)
-    mPlatforms.emplace_back(nullptr, sf::Vector2f(200.f, 30.f), sf::Vector2f(450.f, 780.f));
+    // Plat 1: 900. Plat 2: 750 (150px altura)
+    mPlatforms.emplace_back(nullptr, sf::Vector2f(200.f, 20.f), sf::Vector2f(450.f, 750.f));
 
     // 4. Pared de prueba (Bloque alto en el suelo a la derecha)
-    mPlatforms.emplace_back(nullptr, sf::Vector2f(50.f, 200.f), sf::Vector2f(800.f, 800.f));
+    // Altura 150px (igual que Dexter)
+    mPlatforms.emplace_back(nullptr, sf::Vector2f(50.f, 150.f), sf::Vector2f(800.f, 850.f));
+
+    // Inicializar Escondites
+    // Uno en el suelo cerca del inicio
+    mHidingSpots.emplace_back(sf::Vector2f(80.f, 150.f), sf::Vector2f(400.f, 850.f));
+    
+    // Otro en la plataforma derecha
+    mHidingSpots.emplace_back(sf::Vector2f(80.f, 150.f), sf::Vector2f(500.f, 600.f));
 }
 
 // Destructor
@@ -114,6 +130,24 @@ void Game::processEvents() {
         if (!mIsGameStarted && event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::Return) {
             mIsGameStarted = true;
         }
+
+        // Detectar 'E' para esconderse
+        if (mIsGameStarted && event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::E) {
+            if (mPlayer.isHidden()) {
+                mPlayer.setHidden(false);
+            } else {
+                // Verificar si está en un escondite
+                for (const auto& spot : mHidingSpots) {
+                    if (spot.isPlayerInside(mPlayer)) {
+                        mPlayer.setHidden(true);
+                        // Centrar al jugador en el escondite (opcional, pero se ve mejor)
+                        // sf::FloatRect spotBounds = spot.getBounds();
+                        // mPlayer.setPosition(spotBounds.left + spotBounds.width/2, spotBounds.top + spotBounds.height); 
+                        break;
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -122,6 +156,29 @@ void Game::update(sf::Time deltaTime) {
     // Solo actualizar el jugador si el juego ha comenzado
     if (mIsGameStarted) {
         mPlayer.update(deltaTime, mPlatforms);
+
+        // Actualizar Cámara (Lerp)
+        sf::Vector2f playerPos = mPlayer.getPosition();
+        sf::Vector2f currentCenter = mWorldView.getCenter();
+        
+        // Factor de suavizado (0.1 es suave, 1.0 es instantáneo)
+        float smoothFactor = 5.0f * deltaTime.asSeconds(); 
+        
+        // Lerp manual
+        float newX = currentCenter.x + (playerPos.x - currentCenter.x) * smoothFactor;
+        float newY = currentCenter.y + (playerPos.y - currentCenter.y) * smoothFactor;
+        
+        // Clamp para no ver fuera del mundo (opcional, pero recomendado)
+        // Asumiendo mundo de 0 a WORLD_WIDTH en X y 0 a WINDOW_HEIGHT en Y
+        float viewHalfWidth = mWorldView.getSize().x / 2.f;
+        float viewHalfHeight = mWorldView.getSize().y / 2.f;
+        
+        if (newX - viewHalfWidth < 0) newX = viewHalfWidth;
+        if (newX + viewHalfWidth > Config::WORLD_WIDTH) newX = Config::WORLD_WIDTH - viewHalfWidth;
+        if (newY - viewHalfHeight < 0) newY = viewHalfHeight;
+        if (newY + viewHalfHeight > Config::WINDOW_HEIGHT) newY = Config::WINDOW_HEIGHT - viewHalfHeight;
+
+        mWorldView.setCenter(newX, newY);
     }
 }
 
@@ -158,6 +215,9 @@ void Game::updateDebugInfo(sf::Time deltaTime) {
         case PlayerState::CROUCHING:
             stateStr += "AGACHADO";
             break;
+        case PlayerState::HIDING:
+            stateStr += "ESCONDIDO";
+            break;
     }
     mStateText.setString(stateStr);
 }
@@ -169,6 +229,9 @@ void Game::render() {
 
     if (!mIsGameStarted) {
         // Pantalla de Inicio
+        // Resetear vista para UI
+        mWindow.setView(mWindow.getDefaultView());
+
         // Dibujar imagen de dexter_jeringa centrada
         mWindow.draw(mStartScreenSprite);
         
@@ -178,19 +241,31 @@ void Game::render() {
         // Dibujar texto "Presiona ENTER para comenzar"
         mWindow.draw(mPressEnterText);
     } else {
+        // Aplicar cámara del juego
+        mWindow.setView(mWorldView);
+
         // 2. Dibujar objetos (Aquí dibujaremos al Player, mapa, etc.)
+        
+        // Dibujar escondites (detrás del jugador)
+        for (auto& spot : mHidingSpots) {
+            spot.draw(mWindow);
+        }
+
+        // Dibujar plataformas
         for (auto& platform : mPlatforms) {
             platform.draw(mWindow);
         }
-        mPlayer.draw(mWindow);
 
-        // 3. Dibujar información de debug
+        mPlayer.draw(mWindow);
+        
         if (Config::DEBUG_MODE) {
+            // Dibujar UI de debug (sobre todo lo demás)
+            // Usar defaultView para que el texto quede fijo en pantalla
+            mWindow.setView(mWindow.getDefaultView());
             mWindow.draw(mFpsText);
             mWindow.draw(mStateText);
         }
     }
 
-    // 4. Mostrar lo dibujado en pantalla
     mWindow.display();
 }

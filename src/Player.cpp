@@ -85,6 +85,11 @@ void Player::update(sf::Time deltaTime, const std::vector<Platform>& platforms) 
 }
 
 void Player::handleInput(float dt) {
+    if (mCurrentState == PlayerState::HIDING) {
+        mVelocity.x = 0.f;
+        return;
+    }
+
     if (mCurrentState == PlayerState::PRE_JUMP || mCurrentState == PlayerState::LANDING) {
         mVelocity.x = 0.f;
         return;
@@ -260,7 +265,8 @@ void Player::updateAnimation(float dt) {
                 if (mHasSyringe) tex = mIsRunFrame1 ? &mTextureSyringeRun1 : &mTextureSyringeRun2;
                 else             tex = mIsRunFrame1 ? &mTextureRun1 : &mTextureRun2;
             } else {
-                if (mHasSyringe) tex = mIsRunFrame1 ? &mTextureSyringeCrouchWalk1 : &mTextureSyringeCrouchWalk2;
+                // FIX: Usar paso 2 normal para la animación con jeringa (solicitud usuario)
+                if (mHasSyringe) tex = mIsRunFrame1 ? &mTextureSyringeCrouchWalk1 : &mTextureCrouchWalk2;
                 else             tex = mIsRunFrame1 ? &mTextureCrouchWalk1 : &mTextureCrouchWalk2;
             }
             
@@ -312,9 +318,20 @@ void Player::setState(PlayerState newState, bool force) {
         case PlayerState::LANDING:
             newTex = &mTextureLanding;
             break;
+        case PlayerState::HIDING:
+            newTex = &mTextureIdle; // Usar Idle pero modificar color
+            break;
     }
 
     mSprite.setTexture(*newTex, true); // Reset rect
+    
+    // Efecto visual de escondite
+    if (newState == PlayerState::HIDING) {
+        mSprite.setColor(sf::Color(255, 255, 255, 100)); // Semitransparente
+    } else {
+        mSprite.setColor(sf::Color::White); // Normal
+    }
+
     float scale = getTextureScale(newTex);
     mSprite.setScale(mFacingLeft ? -scale : scale, scale);
     updateOrigin();
@@ -328,26 +345,49 @@ void Player::updateOrigin() {
 float Player::getTextureScale(const sf::Texture* texture) const {
     if (!texture) return 1.f;
     
-    // Altura objetivo baseada en RUN1 (referencia de tamaño "normal")
-    float targetHeight = (float)mTextureRun1.getSize().y;
-    float currentHeight = (float)texture->getSize().y;
-    
-    if (currentHeight <= 0) return 1.f;
+    float targetHeight = Config::PLAYER_TARGET_HEIGHT;
+    const sf::Texture* referenceTexture = texture;
 
-    // Si es agachado (quieto o caminando), reducir la altura objetivo
-    // para que visualmente sea más pequeño que estar de pie
-    if (texture == &mTextureCrouch || texture == &mTextureSyringeCrouch || 
-        texture == &mTextureCrouchWalk1 || texture == &mTextureCrouchWalk2 ||
-        texture == &mTextureSyringeCrouchWalk1 || texture == &mTextureSyringeCrouchWalk2) {
-        targetHeight *= 0.7f; // 70% de la altura normal
+    // Lógica de Agrupación para consistencia en animaciones
+    // Usamos una textura base para calcular la escala de todo el grupo de animación
+    // Esto evita que el personaje "respire" (cambie de tamaño) si los frames tienen alturas diferentes
+
+    // 1. Grupo Correr Normal
+    if (texture == &mTextureRun1 || texture == &mTextureRun2) {
+        referenceTexture = &mTextureRun1;
     }
-    
-    // Ajuste específico para el ataque con jeringa (se veía muy grande)
-    if (texture == &mTextureSyringeAttack) {
-        targetHeight *= 0.85f; // Reducir un 15% para igualar visualmente
+    // 2. Grupo Correr Jeringa
+    else if (texture == &mTextureSyringeRun1 || texture == &mTextureSyringeRun2) {
+        referenceTexture = &mTextureSyringeRun1;
     }
+    // 3. Grupo Agachado Normal (Quieto)
+    else if (texture == &mTextureCrouch) {
+        referenceTexture = &mTextureCrouch;
+        targetHeight *= 0.7f;
+    }
+    // 3b. Grupo Agachado Caminando (Normal)
+    else if (texture == &mTextureCrouchWalk1 || texture == &mTextureCrouchWalk2) {
+        referenceTexture = texture; // Escalar individualmente para forzar altura exacta
+        targetHeight *= 0.6f; // Reducir tamaño (60% vs 70% de parado)
+    }
+    // 4. Grupo Agachado Jeringa (Quieto)
+    else if (texture == &mTextureSyringeCrouch) {
+        referenceTexture = &mTextureSyringeCrouch;
+        targetHeight *= 0.7f;
+    }
+    // 4b. Grupo Agachado Jeringa (Caminando)
+    else if (texture == &mTextureSyringeCrouchWalk1 || texture == &mTextureSyringeCrouchWalk2) {
+        referenceTexture = texture; // Escalar individualmente
+        targetHeight *= 0.6f; // Reducir tamaño
+    }
+    // 5. Ataque
+    else if (texture == &mTextureSyringeAttack) {
+        targetHeight *= 0.85f;
+    }
+
+    float currentHeight = (float)referenceTexture->getSize().y;
+    if (currentHeight <= 0) return 1.f;
     
-    // Calcular escala para que la textura actual tenga la altura objetivo
     return targetHeight / currentHeight;
 }
 
@@ -359,11 +399,22 @@ void Player::clampToBounds() {
     sf::Vector2f pos = mSprite.getPosition();
     float halfWidth = mSprite.getGlobalBounds().width / 2.f;
     if (pos.x - halfWidth < 0) pos.x = halfWidth;
-    if (pos.x + halfWidth > Config::WINDOW_WIDTH) pos.x = Config::WINDOW_WIDTH - halfWidth;
+    if (pos.x + halfWidth > Config::WORLD_WIDTH) pos.x = Config::WORLD_WIDTH - halfWidth;
     mSprite.setPosition(pos);
 }
 
 sf::Vector2f Player::getPosition() const { return mSprite.getPosition(); }
+sf::FloatRect Player::getBounds() const { return mSprite.getGlobalBounds(); }
 PlayerState Player::getState() const { return mCurrentState; }
+bool Player::isHidden() const { return mCurrentState == PlayerState::HIDING; }
+
+void Player::setHidden(bool hidden) {
+    if (hidden) {
+        setState(PlayerState::HIDING);
+    } else {
+        setState(PlayerState::IDLE);
+    }
+}
+
 void Player::draw(sf::RenderWindow& window) { window.draw(mSprite); }
 
