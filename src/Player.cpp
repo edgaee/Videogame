@@ -160,26 +160,42 @@ void Player::handleInput(float dt) {
 }
 
 void Player::updatePhysics(float dt, const std::vector<Platform>& platforms) {
-    // 1. Movimiento en X
+    // 1. Movimiento en X - Verificar colisión ANTES de mover
     float moveX = mVelocity.x * dt;
-    mSprite.move(moveX, 0.f);
     
-    // Colisión X
-    sf::FloatRect playerBounds = mSprite.getGlobalBounds();
-    sf::FloatRect intersection;
-    for (const auto& platform : platforms) {
-        sf::FloatRect platBounds = platform.getBounds();
-        if (playerBounds.intersects(platBounds, intersection)) {
-            // Ignorar colisiones donde la superposición vertical es mínima (probablemente suelo/techo)
-            if (intersection.height < 10.f) continue;
-
-            // Resolver colisión X
-            if (moveX > 0) { // Moviendo derecha
-                mSprite.setPosition(platBounds.left - playerBounds.width / 2.f, mSprite.getPosition().y); // Ajuste por origen centrado en X
-            } else if (moveX < 0) { // Moviendo izquierda
-                mSprite.setPosition(platBounds.left + platBounds.width + playerBounds.width / 2.f, mSprite.getPosition().y);
+    if (moveX != 0.f) {
+        // Crear bounds proyectados para verificar colisión antes de mover
+        sf::FloatRect currentBounds = mSprite.getGlobalBounds();
+        sf::FloatRect projectedBounds = currentBounds;
+        projectedBounds.left += moveX;
+        
+        bool blockedX = false;
+        float correctedX = mSprite.getPosition().x + moveX;
+        
+        for (const auto& platform : platforms) {
+            sf::FloatRect platBounds = platform.getBounds();
+            sf::FloatRect intersection;
+            if (projectedBounds.intersects(platBounds, intersection)) {
+                // Ignorar colisiones donde la superposición vertical es mínima (probablemente suelo/techo)
+                if (intersection.height < 10.f) continue;
+                
+                blockedX = true;
+                // Calcular posición correcta pegado a la pared
+                if (moveX > 0) { // Moviendo derecha
+                    correctedX = platBounds.left - currentBounds.width / 2.f;
+                } else { // Moviendo izquierda
+                    correctedX = platBounds.left + platBounds.width + currentBounds.width / 2.f;
+                }
+                mVelocity.x = 0.f;
+                break;
             }
-            mVelocity.x = 0.f;
+        }
+        
+        // Solo mover si no está bloqueado, o mover a posición corregida
+        if (blockedX) {
+            mSprite.setPosition(correctedX, mSprite.getPosition().y);
+        } else {
+            mSprite.move(moveX, 0.f);
         }
     }
 
@@ -198,7 +214,8 @@ void Player::updatePhysics(float dt, const std::vector<Platform>& platforms) {
     mSprite.move(0.f, moveY);
 
     // Colisión Y (Plataformas)
-    playerBounds = mSprite.getGlobalBounds(); // Actualizar bounds tras mover Y
+    sf::FloatRect playerBounds = mSprite.getGlobalBounds(); // Actualizar bounds tras mover Y
+    sf::FloatRect intersection;
     bool onGround = false;
 
     for (const auto& platform : platforms) {
@@ -398,8 +415,16 @@ void Player::updateTextureForCurrentState() {
 void Player::clampToBounds() {
     sf::Vector2f pos = mSprite.getPosition();
     float halfWidth = mSprite.getGlobalBounds().width / 2.f;
-    if (pos.x - halfWidth < 0) pos.x = halfWidth;
-    if (pos.x + halfWidth > Config::WORLD_WIDTH) pos.x = Config::WORLD_WIDTH - halfWidth;
+    
+    // Bloquear movimiento en los bordes
+    if (pos.x - halfWidth < 0) {
+        pos.x = halfWidth;
+        mVelocity.x = 0.f;
+    }
+    if (pos.x + halfWidth > Config::WORLD_WIDTH) {
+        pos.x = Config::WORLD_WIDTH - halfWidth;
+        mVelocity.x = 0.f;
+    }
     mSprite.setPosition(pos);
 }
 
