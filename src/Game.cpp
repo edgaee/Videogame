@@ -65,17 +65,17 @@ Game::Game()
 
     // Inicializar Plataformas
     
-    // 1. Suelo largo abajo (Base)
-    mPlatforms.emplace_back(nullptr, sf::Vector2f(800.f, 50.f), sf::Vector2f(0.f, 550.f));
+    // 1. Suelo largo abajo (Base) - Coincide con el suelo del jugador (Y=1000)
+    mPlatforms.emplace_back(nullptr, sf::Vector2f(2560.f, 50.f), sf::Vector2f(0.f, 1000.f));
 
-    // 2. Plataforma izquierda (Más baja)
-    mPlatforms.emplace_back(nullptr, sf::Vector2f(200.f, 30.f), sf::Vector2f(50.f, 510.f));
+    // 2. Plataforma izquierda (Muy baja, casi a nivel de suelo)
+    mPlatforms.emplace_back(nullptr, sf::Vector2f(200.f, 30.f), sf::Vector2f(150.f, 920.f));
     
-    // 3. Plataforma derecha (Más baja)
-    mPlatforms.emplace_back(nullptr, sf::Vector2f(200.f, 30.f), sf::Vector2f(300.f, 430.f));
+    // 3. Plataforma derecha (Un poco más alta)
+    mPlatforms.emplace_back(nullptr, sf::Vector2f(200.f, 30.f), sf::Vector2f(450.f, 780.f));
 
     // 4. Pared de prueba (Bloque alto en el suelo a la derecha)
-    mPlatforms.emplace_back(nullptr, sf::Vector2f(50.f, 150.f), sf::Vector2f(600.f, 400.f));
+    mPlatforms.emplace_back(nullptr, sf::Vector2f(50.f, 200.f), sf::Vector2f(800.f, 800.f));
 }
 
 // Destructor

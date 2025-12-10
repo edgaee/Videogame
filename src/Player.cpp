@@ -161,9 +161,13 @@ void Player::updatePhysics(float dt, const std::vector<Platform>& platforms) {
     
     // Colisión X
     sf::FloatRect playerBounds = mSprite.getGlobalBounds();
+    sf::FloatRect intersection;
     for (const auto& platform : platforms) {
         sf::FloatRect platBounds = platform.getBounds();
-        if (playerBounds.intersects(platBounds)) {
+        if (playerBounds.intersects(platBounds, intersection)) {
+            // Ignorar colisiones donde la superposición vertical es mínima (probablemente suelo/techo)
+            if (intersection.height < 10.f) continue;
+
             // Resolver colisión X
             if (moveX > 0) { // Moviendo derecha
                 mSprite.setPosition(platBounds.left - playerBounds.width / 2.f, mSprite.getPosition().y); // Ajuste por origen centrado en X
@@ -194,7 +198,10 @@ void Player::updatePhysics(float dt, const std::vector<Platform>& platforms) {
 
     for (const auto& platform : platforms) {
         sf::FloatRect platBounds = platform.getBounds();
-        if (playerBounds.intersects(platBounds)) {
+        if (playerBounds.intersects(platBounds, intersection)) {
+            // Ignorar colisiones donde la superposición horizontal es mínima (probablemente pared)
+            if (intersection.width < 10.f) continue;
+
             // Resolver colisión Y
             if (moveY > 0) { // Cayendo
                 // Colocamos al jugador justo encima de la plataforma
