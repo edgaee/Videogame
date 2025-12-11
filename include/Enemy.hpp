@@ -15,19 +15,40 @@ enum class EnemyState {
     DEAD        // Muerto (desvaneciendose)
 };
 
+// Tipos de enemigo
+enum class EnemyType {
+    POLICE1,    // Policía 1 (original)
+    POLICE2,    // Policía 2 (nuevo)
+    BOSS        // Doakes (jefe final)
+};
+
+// Estructura que contiene todas las texturas para un tipo de enemigo
+struct EnemyTextures {
+    sf::Texture* idle;
+    sf::Texture* walk1;
+    sf::Texture* walk2;
+    sf::Texture* aim;
+    sf::Texture* shoot;
+    sf::Texture* death1;   // Primer frame de muerte (opcional)
+    sf::Texture* death2;   // Segundo frame de muerte (opcional)
+    sf::Texture* dead;     // Frame final de muerte
+    
+    EnemyTextures() : idle(nullptr), walk1(nullptr), walk2(nullptr), 
+                      aim(nullptr), shoot(nullptr), 
+                      death1(nullptr), death2(nullptr), dead(nullptr) {}
+};
+
 class Enemy {
 public:
     /**
-     * Constructor del enemigo
-     * @param textureWalk1 Textura del primer frame de caminata
-     * @param textureWalk2 Textura del segundo frame de caminata
-     * @param textureIdle Textura cuando está quieto/girando
-     * @param textureShoot Textura disparando
+     * Constructor del enemigo (NUEVO: usa EnemyTextures)
+     * @param textures Estructura con todas las texturas del enemigo
+     * @param type Tipo de enemigo (POLICE1, POLICE2, BOSS)
      * @param position Posición inicial (X, Y)
      * @param patrolMinX Límite izquierdo del patrullaje
      * @param patrolMaxX Límite derecho del patrullaje
      */
-    Enemy(sf::Texture* textureWalk1, sf::Texture* textureWalk2, sf::Texture* textureIdle, sf::Texture* textureShoot,
+    Enemy(const EnemyTextures& textures, EnemyType type,
           sf::Vector2f position, float patrolMinX, float patrolMaxX);
     
     // Actualiza el movimiento y animación del enemigo
@@ -63,6 +84,10 @@ public:
     void confirmShot();              // Confirma que se disparó la bala
     sf::Vector2f getGunPosition() const;  // Posición de la pistola
     bool isFacingRight() const;      // Dirección que mira
+    
+    // Sistema de salud (para boss)
+    void takeDamage(int damage = 1);
+    int getHealth() const;
 
 private:
     // Métodos internos
@@ -74,14 +99,13 @@ private:
     sf::Sprite mSprite;
     sf::ConvexShape mVisionCone;
     
-    // Texturas
-    sf::Texture* mTextureWalk1;
-    sf::Texture* mTextureWalk2;
-    sf::Texture* mTextureIdle;
-    sf::Texture* mTextureShoot;
-    sf::Texture mTextureDeath1;  // Primer frame de muerte
-    sf::Texture mTextureDeath2;  // Segundo frame de muerte
-    sf::Texture mTextureDead;    // Frame final (muerto)
+    // Tipo y salud
+    EnemyType mType;
+    int mHealth;
+    int mMaxHealth;
+    
+    // Texturas (punteros a texturas externas)
+    EnemyTextures mTextures;
 
     // Audio
     sf::SoundBuffer mBufferChasing;

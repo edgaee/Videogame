@@ -18,6 +18,15 @@ struct Bullet {
     Bullet() : travelTime(0.f), elapsedTime(0.f), active(true) {}
 };
 
+// Estructura para coleccionables (Blood Slides)
+struct Collectible {
+    sf::Sprite sprite;
+    sf::Vector2f position;
+    bool collected;
+    
+    Collectible() : collected(false) {}
+};
+
 class Level {
 public:
     Level();
@@ -37,6 +46,7 @@ public:
     // Getters para Game (si fueran necesarios)
     const std::vector<HidingSpot>& getHidingSpots() const;
     bool isPlayerDetected() const;
+    int getCollectedCount() const;
 
 private:
     sf::Texture mTexFloor;
@@ -46,15 +56,41 @@ private:
     std::vector<Platform> mPlatforms;
     std::vector<HidingSpot> mHidingSpots;
     
-    // Enemigos
-    sf::Texture mTexEnemyWalk1;
-    sf::Texture mTexEnemyWalk2;
-    sf::Texture mTexEnemyIdle;
-    sf::Texture mTexEnemyShoot;
+    // Enemigos - Policía 1
+    sf::Texture mTexPolice1_Idle;
+    sf::Texture mTexPolice1_Walk1;
+    sf::Texture mTexPolice1_Walk2;
+    sf::Texture mTexPolice1_Aim;
+    sf::Texture mTexPolice1_Shoot;
+    sf::Texture mTexPolice1_Death1;
+    sf::Texture mTexPolice1_Death2;
+    sf::Texture mTexPolice1_Dead;
+    
+    // Enemigos - Policía 2
+    sf::Texture mTexPolice2_Idle;
+    sf::Texture mTexPolice2_Walk1;
+    sf::Texture mTexPolice2_Walk2;
+    sf::Texture mTexPolice2_Aim;
+    sf::Texture mTexPolice2_Shoot;
+    sf::Texture mTexPolice2_Dead;
+    
+    // Boss - Doakes
+    sf::Texture mTexDoakes_Idle;
+    sf::Texture mTexDoakes_Walk1;
+    sf::Texture mTexDoakes_Walk2;
+    sf::Texture mTexDoakes_Aim;
+    sf::Texture mTexDoakes_Shoot;
+    sf::Texture mTexDoakes_Dead;
+    
     std::vector<Enemy> mEnemies;
     bool mPlayerDetected;
     
     // Sistema de balas
     sf::Texture mTexBullet;
     std::vector<Bullet> mBullets;
+    
+    // Sistema de coleccionables
+    sf::Texture mTexBloodSlide;
+    std::vector<Collectible> mCollectibles;
+    int mCollectedCount;
 };

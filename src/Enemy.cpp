@@ -3,12 +3,10 @@
 #include <cmath>
 #include <iostream>
 
-Enemy::Enemy(sf::Texture* textureWalk1, sf::Texture* textureWalk2, sf::Texture* textureIdle, sf::Texture* textureShoot,
+Enemy::Enemy(const EnemyTextures& textures, EnemyType type,
              sf::Vector2f position, float patrolMinX, float patrolMaxX)
-    : mTextureWalk1(textureWalk1),
-      mTextureWalk2(textureWalk2),
-      mTextureIdle(textureIdle),
-      mTextureShoot(textureShoot),
+    : mTextures(textures),
+      mType(type),
       mPatrolStart(patrolMinX),
       mPatrolEnd(patrolMaxX),
       mSpeed(150.f),
@@ -29,24 +27,34 @@ Enemy::Enemy(sf::Texture* textureWalk1, sf::Texture* textureWalk2, sf::Texture* 
       mDeathFrame(0),
       mWantsToShoot(false)
 {
-    // Cargar texturas de animación de muerte
-    mTextureDeath1.loadFromFile(std::string(Config::IMAGE_PATH) + "policia1_muerte1.png");
-    mTextureDeath2.loadFromFile(std::string(Config::IMAGE_PATH) + "policia1_muerte2.png");
-    mTextureDead.loadFromFile(std::string(Config::IMAGE_PATH) + "policia1_muerto.png");
+    // Configurar salud según el tipo
+    if (mType == EnemyType::BOSS) {
+        mMaxHealth = 3;  // Doakes requiere 3 golpes
+        mHealth = 3;
+    } else {
+        mMaxHealth = 1;  // Policías mueren en 1 golpe
+        mHealth = 1;
+    }
     
     // Cargar Audio
     if (mBufferChasing.loadFromFile(std::string(Config::SOUND_PATH) + "chasing.wav")) {
         mSoundChasing.setBuffer(mBufferChasing);
         mSoundChasing.setLoop(false); // Solo una vez al detectar
         mSoundChasing.setVolume(20.f);
+        std::cout << "Audio chasing.wav cargado correctamente" << std::endl;
+    } else {
+        std::cerr << "Error: No se pudo cargar chasing.wav" << std::endl;
     }
     if (mBufferGunshot.loadFromFile(std::string(Config::SOUND_PATH) + "gunshot.wav")) {
         mSoundGunshot.setBuffer(mBufferGunshot);
+        std::cout << "Audio gunshot.wav cargado correctamente" << std::endl;
+    } else {
+        std::cerr << "Error: No se pudo cargar gunshot.wav" << std::endl;
     }
 
     // Configurar sprite inicial
-    if (mTextureWalk1) {
-        mSprite.setTexture(*mTextureWalk1);
+    if (mTextures.walk1) {
+        mSprite.setTexture(*mTextures.walk1);
     }
     
     // Calcular escala para altura objetivo (similar al Player)
@@ -69,11 +77,12 @@ Enemy::Enemy(sf::Texture* textureWalk1, sf::Texture* textureWalk2, sf::Texture* 
 }
 
 float Enemy::getTextureScale() const {
-    if (!mTextureWalk1) return 1.f;
+    if (!mTextures.walk1) return 1.f;
     
-    // Altura objetivo para el enemigo (250px)
-    float targetHeight = 250.f;
-    float currentHeight = static_cast<float>(mTextureWalk1->getSize().y);
+    // Altura objetivo para el enemigo
+    // Aumentada a 200px para que se vean más grandes y proporcionales
+    float targetHeight = 200.f;
+    float currentHeight = static_cast<float>(mTextures.walk1->getSize().y);
     
     if (currentHeight <= 0) return 1.f;
     
@@ -119,8 +128,8 @@ void Enemy::update(float dt, Player& player) {
                     mTurnTimer = 0.5f; // Pausa de medio segundo
                     
                     // Mostrar textura idle al girar
-                    if (mTextureIdle) {
-                        mSprite.setTexture(*mTextureIdle, true);
+                    if (mTextures.idle) {
+                        mSprite.setTexture(*mTextures.idle, true);
                         float scale = getTextureScale();
                         mSprite.setScale(mMovingRight ? -scale : scale, scale);
                         updateOrigin();
@@ -131,8 +140,8 @@ void Enemy::update(float dt, Player& player) {
                     mCurrentState = EnemyState::TURNING;
                     mTurnTimer = 0.5f;
                     
-                    if (mTextureIdle) {
-                        mSprite.setTexture(*mTextureIdle, true);
+                    if (mTextures.idle) {
+                        mSprite.setTexture(*mTextures.idle, true);
                         float scale = getTextureScale();
                         mSprite.setScale(mMovingRight ? -scale : scale, scale);
                         updateOrigin();
@@ -182,8 +191,8 @@ void Enemy::update(float dt, Player& player) {
                         mCurrentState = EnemyState::SHOOTING;
                         mShootTimer = 0.5f; // Tiempo de apuntado
                         // Cambiar textura a disparo
-                        if (mTextureShoot) {
-                            mSprite.setTexture(*mTextureShoot, true);
+                        if (mTextures.shoot) {
+                            mSprite.setTexture(*mTextures.shoot, true);
                             float scale = getTextureScale();
                             mSprite.setScale(mMovingRight ? scale : -scale, scale);
                             updateOrigin();
@@ -249,13 +258,13 @@ void Enemy::update(float dt, Player& player) {
                         mDeathFrame++;
                         
                         float scale = getTextureScale();
-                        if (mDeathFrame == 1) {
-                            mSprite.setTexture(mTextureDeath2, true);
+                        if (mDeathFrame == 1 && mTextures.death2) {
+                            mSprite.setTexture(*mTextures.death2, true);
                             mSprite.setScale(mMovingRight ? scale : -scale, scale);
                             updateOrigin();
-                        } else if (mDeathFrame == 2) {
+                        } else if (mDeathFrame == 2 && mTextures.dead) {
                             // Textura final de muerto (acostado)
-                            mSprite.setTexture(mTextureDead, true);
+                            mSprite.setTexture(*mTextures.dead, true);
                             // Escala proporcional para la textura acostada
                             float deadScale = scale * 0.8f;  // Ajustar tamaño
                             mSprite.setScale(mMovingRight ? deadScale : -deadScale, deadScale);
@@ -320,7 +329,7 @@ void Enemy::updateAnimation(float dt) {
         mAnimationTimer = 0.f;
         mIsWalkFrame1 = !mIsWalkFrame1;
         
-        sf::Texture* tex = mIsWalkFrame1 ? mTextureWalk1 : mTextureWalk2;
+        sf::Texture* tex = mIsWalkFrame1 ? mTextures.walk1 : mTextures.walk2;
         if (tex) {
             mSprite.setTexture(*tex, true);
             float scale = getTextureScale();
@@ -435,11 +444,19 @@ void Enemy::kill() {
     mDeathBlinkTimer = 0.f;
     mDeathFrame = 0;  // Empezar desde el primer frame
     
-    // Cambiar textura al primer frame de muerte
-    mSprite.setTexture(mTextureDeath1, true);
-    float scale = getTextureScale();
-    mSprite.setScale(mMovingRight ? scale : -scale, scale);
-    updateOrigin();
+    // Cambiar textura al primer frame de muerte (si existe)
+    if (mTextures.death1) {
+        mSprite.setTexture(*mTextures.death1, true);
+        float scale = getTextureScale();
+        mSprite.setScale(mMovingRight ? scale : -scale, scale);
+        updateOrigin();
+    } else if (mTextures.dead) {
+        // Si no hay animación de muerte, ir directo al frame final
+        mSprite.setTexture(*mTextures.dead, true);
+        float scale = getTextureScale() * 0.8f;
+        mSprite.setScale(mMovingRight ? scale : -scale, scale);
+        updateOrigin();
+    }
     
     // Detener sonidos
     mSoundChasing.stop();
@@ -491,4 +508,19 @@ sf::Vector2f Enemy::getGunPosition() const {
 
 bool Enemy::isFacingRight() const {
     return mMovingRight;
+}
+
+void Enemy::takeDamage(int damage) {
+    if (mCurrentState == EnemyState::DYING || mCurrentState == EnemyState::DEAD) {
+        return; // Ya está muriendo/muerto
+    }
+    
+    mHealth -= damage;
+    if (mHealth <= 0) {
+        kill();
+    }
+}
+
+int Enemy::getHealth() const {
+    return mHealth;
 }

@@ -1,4 +1,4 @@
-#include "Game.hpp"
+﻿#include "Game.hpp"
 #include <sstream>
 #include <iomanip>
 #include <cmath> 
@@ -21,7 +21,7 @@ Game::Game()
     }
     mBgSprite.setTexture(mBgTexture);
 
-    // Inicializar Vista (Cámara)
+    // Inicializar Vista (CÃ¡mara)
     mWorldView = mWindow.getDefaultView();
 
     // Configurar Pantalla de Inicio
@@ -41,7 +41,7 @@ Game::Game()
         mStartScreenSprite.setPosition(Config::WINDOW_WIDTH / 2.f, Config::WINDOW_HEIGHT / 2.f);
     }
 
-    // Cargar fuente para debug y título
+    // Cargar fuente para debug y tÃ­tulo
     if (!mDebugFont.loadFromFile(Config::DEBUG_FONT)) {
         // Si falla la fuente, continuamos sin debug visual
     } else {
@@ -63,7 +63,7 @@ Game::Game()
             mStateText.setPosition(10.f, 70.f);
         }
         
-        // Configurar texto de título "Dexter Game" para pantalla de inicio
+        // Configurar texto de tÃ­tulo "Dexter Game" para pantalla de inicio
         mTitleText.setFont(mDebugFont);
         mTitleText.setString("Dexter Game");
         mTitleText.setCharacterSize(80);
@@ -74,7 +74,7 @@ Game::Game()
         mTitleText.setOrigin(textBounds.width / 2.f, 0.f);
         mTitleText.setPosition(Config::WINDOW_WIDTH / 2.f, 50.f);
         
-        // Configurar texto de instrucción "Presiona ENTER para comenzar"
+        // Configurar texto de instrucciÃ³n "Presiona ENTER para comenzar"
         mPressEnterText.setFont(mDebugFont);
         mPressEnterText.setString("Presiona ENTER para comenzar");
         mPressEnterText.setCharacterSize(40);
@@ -82,7 +82,7 @@ Game::Game()
         mPressEnterText.setOutlineColor(sf::Color::Black);
         mPressEnterText.setOutlineThickness(2.f);
         
-        // Centrar texto de instrucción en la parte inferior
+        // Centrar texto de instrucciÃ³n en la parte inferior
         sf::FloatRect enterBounds = mPressEnterText.getLocalBounds();
         mPressEnterText.setOrigin(enterBounds.width / 2.f, enterBounds.height / 2.f);
         mPressEnterText.setPosition(Config::WINDOW_WIDTH / 2.f, Config::WINDOW_HEIGHT - 100.f);
@@ -113,13 +113,13 @@ Game::Game()
     // Cargar Nivel
     mLevel.loadLevel1();
 
-    // Cargar Música de Fondo
+    // Cargar MÃºsica de Fondo
     if (!mBgMusic.openFromFile(std::string(Config::ASSET_PATH) + "audio/stealth.wav")) {
         // Error handling
     } else {
         mBgMusic.setLoop(true);
         mBgMusic.setVolume(50.f);
-        // No reproducir todavía, esperar a start game
+        // No reproducir todavÃ­a, esperar a start game
     }
 }
 
@@ -133,7 +133,7 @@ void Game::run() {
     sf::Clock clock; // Reloj para medir el tiempo entre frames (delta time)
 
     while (mWindow.isOpen()) {
-        // Medir el tiempo transcurrido desde la última vuelta del bucle
+        // Medir el tiempo transcurrido desde la Ãºltima vuelta del bucle
         sf::Time deltaTime = clock.restart();
 
         processEvents();
@@ -147,7 +147,7 @@ void Game::run() {
 void Game::processEvents() {
     sf::Event event;
     while (mWindow.pollEvent(event)) {
-        // Cerrar la ventana si se presiona el botón de cerrar o Escape
+        // Cerrar la ventana si se presiona el botÃ³n de cerrar o Escape
         if (event.type == sf::Event::Closed) {
             mWindow.close();
         }
@@ -163,7 +163,7 @@ void Game::processEvents() {
             }
         }
         
-        // Detectar R para reiniciar después de Game Over
+        // Detectar R para reiniciar despuÃ©s de Game Over
         if (mIsGameOver && event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::R) {
             // Reiniciar el juego
             mIsGameOver = false;
@@ -183,7 +183,7 @@ void Game::processEvents() {
             if (mPlayer.isHidden()) {
                 mPlayer.setHidden(false);
             } else {
-                // Verificar si está en un escondite (Consultar al Nivel)
+                // Verificar si estÃ¡ en un escondite (Consultar al Nivel)
                 for (const auto& spot : mLevel.getHidingSpots()) {
                     if (spot.isPlayerInside(mPlayer)) {
                         mPlayer.setHidden(true);
@@ -195,7 +195,7 @@ void Game::processEvents() {
     }
 }
 
-// Actualización de lógica
+// ActualizaciÃ³n de lÃ³gica
 void Game::update(sf::Time deltaTime) {
     // No actualizar si estamos en Game Over
     if (mIsGameOver) return;
@@ -204,7 +204,7 @@ void Game::update(sf::Time deltaTime) {
     if (mIsGameStarted) {
         float dt = deltaTime.asSeconds();
         
-        // 1. Actualizar Player (Input, Animación, Gravedad)
+        // 1. Actualizar Player (Input, AnimaciÃ³n, Gravedad)
         mPlayer.update(deltaTime);
         
         // 2. Actualizar Nivel (Entidades y Enemigos)
@@ -212,12 +212,12 @@ void Game::update(sf::Time deltaTime) {
         
         // 3. Verificar Game Over (Vidas)
         if (mPlayer.isDead()) {
-            // Si acaba de morir, detener música
+            // Si acaba de morir, detener mÃºsica
             if (mBgMusic.getStatus() == sf::Music::Playing) {
                 mBgMusic.stop();
             }
             
-            // Incrementar timer para mostrar animación de muerte antes del Game Over
+            // Incrementar timer para mostrar animaciÃ³n de muerte antes del Game Over
             mGameOverTimer += dt;
             if (mGameOverTimer > 2.0f) { // Esperar 2 segundos
                 mIsGameOver = true;
@@ -229,16 +229,16 @@ void Game::update(sf::Time deltaTime) {
         }
         
         // 4. Resolver Colisiones (Nivel mueve al Player)
-        // Solo si no está muerto (para evitar que se mueva el cadáver si hay lógica extra)
+        // Solo si no estÃ¡ muerto (para evitar que se mueva el cadÃ¡ver si hay lÃ³gica extra)
         if (!mPlayer.isDead()) {
             mLevel.checkCollisions(mPlayer, dt);
         }
 
-        // Actualizar Cámara (Lerp)
+        // Actualizar CÃ¡mara (Lerp)
         sf::Vector2f playerPos = mPlayer.getPosition();
         sf::Vector2f currentCenter = mWorldView.getCenter();
         
-        // Factor de suavizado (0.1 es suave, 1.0 es instantáneo)
+        // Factor de suavizado (0.1 es suave, 1.0 es instantÃ¡neo)
         float smoothFactor = 5.0f * deltaTime.asSeconds(); 
         
         // Lerp manual
@@ -259,7 +259,7 @@ void Game::update(sf::Time deltaTime) {
     }
 }
 
-// Actualizar información de debug
+// Actualizar informaciÃ³n de debug
 void Game::updateDebugInfo(sf::Time deltaTime) {
     if (!Config::DEBUG_MODE) return;
 
@@ -277,7 +277,7 @@ void Game::updateDebugInfo(sf::Time deltaTime) {
         mFpsUpdateTimer = 0.f;
     }
 
-    // Actualizar información de debug
+    // Actualizar informaciÃ³n de debug
     std::ostringstream posOss;
     posOss << "Pos: (" << (int)mPlayer.getPosition().x << ", " << (int)mPlayer.getPosition().y << ")";
     mPositionText.setString(posOss.str());
@@ -319,7 +319,7 @@ void Game::render() {
         mWindow.draw(mPressEnterText);
     } else if (mIsGameOver) {
         // Pantalla de Game Over
-        // Aplicar cámara del juego para ver el nivel de fondo
+        // Aplicar cÃ¡mara del juego para ver el nivel de fondo
         mWindow.setView(mWorldView);
         
         // Dibujar el nivel de fondo (oscurecido)
@@ -336,12 +336,12 @@ void Game::render() {
         mWindow.draw(mGameOverText);
         mWindow.draw(mRestartText);
     } else {
-        // Aplicar cámara del juego
+        // Aplicar cÃ¡mara del juego
         mWindow.setView(mWorldView);
 
-        // 0. Dibujar Fondo (Parallax simple: fijo con la cámara o movimiento lento)
-        // Para que sea fijo (skybox), dibujamos con la vista por defecto o ajustamos posición
-        // Opción A: Fondo estático (siempre cubre la pantalla)
+        // 0. Dibujar Fondo (Parallax simple: fijo con la cÃ¡mara o movimiento lento)
+        // Para que sea fijo (skybox), dibujamos con la vista por defecto o ajustamos posiciÃ³n
+        // OpciÃ³n A: Fondo estÃ¡tico (siempre cubre la pantalla)
         sf::View currentView = mWindow.getView();
         mWindow.setView(mWindow.getDefaultView());
         mWindow.draw(mBgSprite);
@@ -354,10 +354,10 @@ void Game::render() {
         mPlayer.draw(mWindow);
 
         // 3. Dibujar HUD (Interfaz)
-        mHUD.draw(mWindow, mPlayer.getLives());
+        mHUD.draw(mWindow, mPlayer.getLives(), mLevel.getCollectedCount());
         
         if (Config::DEBUG_MODE) {
-            // Dibujar UI de debug (sobre todo lo demás)
+            // Dibujar UI de debug (sobre todo lo demÃ¡s)
             // Usar defaultView para que el texto quede fijo en pantalla
             mWindow.setView(mWindow.getDefaultView());
             mWindow.draw(mFpsText);

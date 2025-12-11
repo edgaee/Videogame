@@ -1,21 +1,34 @@
 #include "HidingSpot.hpp"
 
-HidingSpot::HidingSpot(sf::Vector2f size, sf::Vector2f position) {
-    mBody.setSize(size);
-    mBody.setPosition(position);
-    mBody.setFillColor(sf::Color(50, 50, 50, 180)); // Gris oscuro semitransparente
-    mBody.setOutlineColor(sf::Color(200, 200, 200));
-    mBody.setOutlineThickness(2.f);
+HidingSpot::HidingSpot(sf::Texture* texture, sf::Vector2f position, float scale) {
+    if (texture) {
+        mSprite.setTexture(*texture);
+        mSprite.setScale(scale, scale);
+        
+        // Centrar origen en la base del sprite
+        sf::FloatRect bounds = mSprite.getLocalBounds();
+        mSprite.setOrigin(bounds.width / 2.f, bounds.height);
+        mSprite.setPosition(position);
+        
+        // Área de interacción ligeramente más grande que el sprite
+        sf::FloatRect spriteBounds = mSprite.getGlobalBounds();
+        mInteractionBounds = sf::FloatRect(
+            spriteBounds.left - 50.f,
+            spriteBounds.top,
+            spriteBounds.width + 100.f,
+            spriteBounds.height
+        );
+    }
 }
 
 void HidingSpot::draw(sf::RenderWindow& window) {
-    window.draw(mBody);
+    window.draw(mSprite);
 }
 
 bool HidingSpot::isPlayerInside(const Player& player) const {
-    return mBody.getGlobalBounds().intersects(player.getBounds());
+    return mInteractionBounds.intersects(player.getBounds());
 }
 
 sf::FloatRect HidingSpot::getBounds() const {
-    return mBody.getGlobalBounds();
+    return mInteractionBounds;
 }
