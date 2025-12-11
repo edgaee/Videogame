@@ -66,6 +66,9 @@ void Level::update(float dt, Player& player) {
         attackBounds = player.getAttackBounds();
     }
     
+    // Resetear estado de detección
+    mPlayerDetected = false;
+    
     // Actualizar enemigos
     for (auto it = mEnemies.begin(); it != mEnemies.end(); ) {
         // Verificar si el ataque del jugador golpea al enemigo
@@ -77,6 +80,11 @@ void Level::update(float dt, Player& player) {
         }
         
         it->update(dt, player);
+        
+        // Verificar si este enemigo está persiguiendo al jugador
+        if (it->isChasing()) {
+            mPlayerDetected = true;
+        }
         
         // Verificar si el enemigo quiere disparar
         if (it->wantsToShoot() && !player.isDead()) {

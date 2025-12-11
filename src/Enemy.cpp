@@ -38,6 +38,7 @@ Enemy::Enemy(sf::Texture* textureWalk1, sf::Texture* textureWalk2, sf::Texture* 
     if (mBufferChasing.loadFromFile(std::string(Config::SOUND_PATH) + "chasing.wav")) {
         mSoundChasing.setBuffer(mBufferChasing);
         mSoundChasing.setLoop(false); // Solo una vez al detectar
+        mSoundChasing.setVolume(20.f);
     }
     if (mBufferGunshot.loadFromFile(std::string(Config::SOUND_PATH) + "gunshot.wav")) {
         mSoundGunshot.setBuffer(mBufferGunshot);
@@ -459,6 +460,10 @@ bool Enemy::isDying() const {
 bool Enemy::shouldRemove() const {
     // Remover cuando el desvanecimiento termine (alpha = 0)
     return mCurrentState == EnemyState::DEAD && mDeathAlpha <= 0.f;
+}
+
+bool Enemy::isChasing() const {
+    return mCurrentState == EnemyState::CHASING || mCurrentState == EnemyState::SHOOTING;
 }
 
 bool Enemy::wantsToShoot() const {

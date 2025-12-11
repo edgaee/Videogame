@@ -96,6 +96,8 @@ private:
     // Audio
     sf::SoundBuffer mBufferPain;
     sf::Sound mSoundPain;
+    sf::SoundBuffer mBufferWalking;
+    sf::Sound mSoundWalking;
 
     // Variables de Física
     sf::Vector2f mVelocity;

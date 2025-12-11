@@ -52,6 +52,9 @@ public:
     bool isDead() const;
     bool isDying() const;
     
+    // Verifica si el enemigo está persiguiendo al jugador
+    bool isChasing() const;
+    
     // Verifica si el enemigo debe ser eliminado del juego
     bool shouldRemove() const;
     

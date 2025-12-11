@@ -76,8 +76,19 @@ Player::Player()
     if (!mTextureDead.loadFromFile(path + "dexter_tirado.png")) mTextureDead = mTextureIdle;
 
     // Audio
-    if (mBufferPain.loadFromFile(std::string(Config::ASSET_PATH) + "audio/pain_sound.wav")) {
+    if (mBufferPain.loadFromFile(std::string(Config::SOUND_PATH) + "pain_sound.wav")) {
         mSoundPain.setBuffer(mBufferPain);
+        mSoundPain.setVolume(150.f); // Aumentar volumen considerablemente
+    } else {
+        std::cerr << "Error: No se pudo cargar pain_sound.wav" << std::endl;
+    }
+    
+    if (mBufferWalking.loadFromFile(std::string(Config::SOUND_PATH) + "walking.wav")) {
+        mSoundWalking.setBuffer(mBufferWalking);
+        mSoundWalking.setLoop(true);
+        mSoundWalking.setVolume(20.f);
+    } else {
+        std::cerr << "Error: No se pudo cargar walking.wav" << std::endl;
     }
 
     mSprite.setPosition(Config::PLAYER_INITIAL_X, mGroundY);
@@ -259,10 +270,25 @@ void Player::handleInput(float dt) {
         mVelocity.x = -currentSpeed;
         mFacingLeft = true;
         isMoving = true;
+        
+        // Reproducir sonido de caminata si no está sonando
+        if (mSoundWalking.getStatus() != sf::Sound::Playing) {
+            mSoundWalking.play();
+        }
     } else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Right)) {
         mVelocity.x = currentSpeed;
         mFacingLeft = false;
         isMoving = true;
+        
+        // Reproducir sonido de caminata si no está sonando
+        if (mSoundWalking.getStatus() != sf::Sound::Playing) {
+            mSoundWalking.play();
+        }
+    } else {
+        // Detener sonido de caminata si no se está moviendo
+        if (mSoundWalking.getStatus() == sf::Sound::Playing) {
+            mSoundWalking.stop();
+        }
     }
 
     bool canJump = (mCurrentState == PlayerState::IDLE || mCurrentState == PlayerState::RUNNING || 
