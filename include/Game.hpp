@@ -62,6 +62,9 @@ private:
     int mFrameCount;
     float mFpsUpdateTimer;
 
+    // Audio
+    sf::Music mBgMusic;
+
     // Pantalla de Inicio
     bool mIsGameStarted;
     sf::Texture mStartScreenTexture;
@@ -71,6 +74,7 @@ private:
     
     // Pantalla de Game Over
     bool mIsGameOver;
+    float mGameOverTimer; // Timer para retrasar la pantalla de Game Over
     sf::Text mGameOverText;
     sf::Text mRestartText;
 };

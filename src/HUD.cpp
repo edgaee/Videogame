@@ -11,7 +11,7 @@ HUD::HUD() {
     }
     mLifeSprite.setTexture(mLifeTexture);
     // Escalar si es necesario (asumiendo icono de 32-64px)
-    // mLifeSprite.setScale(0.5f, 0.5f); 
+    mLifeSprite.setScale(0.1f, 0.1f); // Reducir tamaño drásticamente
 }
 
 void HUD::draw(sf::RenderWindow& window, int lives) {
@@ -21,7 +21,7 @@ void HUD::draw(sf::RenderWindow& window, int lives) {
 
     float startX = 20.f;
     float startY = 20.f;
-    float spacing = 40.f;
+    float spacing = 60.f; // Aumentar espaciado
 
     for (int i = 0; i < lives; ++i) {
         mLifeSprite.setPosition(startX + i * spacing, startY);

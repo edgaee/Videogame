@@ -8,7 +8,9 @@ Game::Game()
     : mWindow(sf::VideoMode(Config::WINDOW_WIDTH, Config::WINDOW_HEIGHT), Config::WINDOW_TITLE),
       mFrameCount(0),
       mFpsUpdateTimer(0.f),
-      mIsGameStarted(false)
+      mIsGameStarted(false),
+      mIsGameOver(false),
+      mGameOverTimer(0.f)
 {
     // Limitar el framerate a 60 FPS para consistencia
     mWindow.setFramerateLimit(Config::FPS_LIMIT);
@@ -102,6 +104,15 @@ Game::Game()
 
     // Cargar Nivel
     mLevel.loadLevel1();
+
+    // Cargar Música de Fondo
+    if (!mBgMusic.openFromFile(std::string(Config::ASSET_PATH) + "audio/stealth.wav")) {
+        // Error handling
+    } else {
+        mBgMusic.setLoop(true);
+        mBgMusic.setVolume(50.f);
+        // No reproducir todavía, esperar a start game
+    }
 }
 
 // Destructor
@@ -139,12 +150,20 @@ void Game::processEvents() {
         // Detectar ENTER para iniciar el juego desde la pantalla de inicio
         if (!mIsGameStarted && event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::Return) {
             mIsGameStarted = true;
+            if (mBgMusic.getStatus() != sf::Music::Playing) {
+                mBgMusic.play();
+            }
         }
         
         // Detectar R para reiniciar después de Game Over
         if (mIsGameOver && event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::R) {
             // Reiniciar el juego
             mIsGameOver = false;
+            mPlayer = Player(); // Resetear jugador completo
+            mLevel.loadLevel1(); // Resetear nivel
+            if (mBgMusic.getStatus() != sf::Music::Playing) {
+                mBgMusic.play();
+            }
             mPlayer.setPosition(Config::PLAYER_INITIAL_X, Config::PLAYER_INITIAL_Y);
             mPlayer.setVelocity(0.f, 0.f);
             mPlayer.setHidden(false);
@@ -185,12 +204,27 @@ void Game::update(sf::Time deltaTime) {
         
         // 3. Verificar Game Over (Vidas)
         if (mPlayer.isDead()) {
-            mIsGameOver = true;
-            return;
+            // Si acaba de morir, detener música
+            if (mBgMusic.getStatus() == sf::Music::Playing) {
+                mBgMusic.stop();
+            }
+            
+            // Incrementar timer para mostrar animación de muerte antes del Game Over
+            mGameOverTimer += dt;
+            if (mGameOverTimer > 2.0f) { // Esperar 2 segundos
+                mIsGameOver = true;
+            }
+            // No retornamos inmediatamente para permitir que se dibuje el sprite de muerte
+            // Pero evitamos colisiones y movimiento extra en Player::update (ya manejado por estado DEAD)
+        } else {
+            mGameOverTimer = 0.f;
         }
         
         // 4. Resolver Colisiones (Nivel mueve al Player)
-        mLevel.checkCollisions(mPlayer, dt);
+        // Solo si no está muerto (para evitar que se mueva el cadáver si hay lógica extra)
+        if (!mPlayer.isDead()) {
+            mLevel.checkCollisions(mPlayer, dt);
+        }
 
         // Actualizar Cámara (Lerp)
         sf::Vector2f playerPos = mPlayer.getPosition();

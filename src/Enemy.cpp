@@ -156,7 +156,11 @@ void Enemy::update(float dt, Player& player) {
                         mCurrentState = EnemyState::PATROLLING;
                         mVisionCone.setFillColor(sf::Color(0, 0, 255, 60)); // Azul
                         mSpeed = 150.f; // Velocidad normal
+                        
+                        // Detener sonido de persecución
+                        mSoundChasing.stop();
                         mChasingSoundPlayed = false;
+                        
                         mLostSightTimer = 0.f;
                     }
                 } else {
@@ -169,6 +173,8 @@ void Enemy::update(float dt, Player& player) {
                         // Cambiar textura a disparo
                         if (mTextureShoot) {
                             mSprite.setTexture(*mTextureShoot, true);
+                            float scale = getTextureScale();
+                            mSprite.setScale(mMovingRight ? scale : -scale, scale);
                             updateOrigin();
                         }
                         break;
@@ -225,7 +231,8 @@ void Enemy::update(float dt, Player& player) {
 }
 
 void Enemy::updateAnimation(float dt) {
-    if (mCurrentState != EnemyState::PATROLLING) return;
+    // Permitir animación en PATROLLING y CHASING
+    if (mCurrentState != EnemyState::PATROLLING && mCurrentState != EnemyState::CHASING) return;
     
     mAnimationTimer += dt;
     if (mAnimationTimer >= 0.2f) { // Cambiar frame cada 0.2 segundos

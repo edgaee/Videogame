@@ -63,6 +63,14 @@ Player::Player()
 
     // 5. Ataque
     if (!mTextureSyringeAttack.loadFromFile(path + "dexter_jeringa_ataque.png")) mTextureSyringeAttack = mTextureIdle;
+    
+    // 6. Muerte
+    if (!mTextureDead.loadFromFile(path + "dexter_tirado.png")) mTextureDead = mTextureIdle;
+
+    // Audio
+    if (mBufferPain.loadFromFile(std::string(Config::ASSET_PATH) + "audio/pain_sound.wav")) {
+        mSoundPain.setBuffer(mBufferPain);
+    }
 
     mSprite.setPosition(Config::PLAYER_INITIAL_X, mGroundY);
     
@@ -72,6 +80,14 @@ Player::Player()
 
 void Player::update(sf::Time deltaTime) {
     float dt = deltaTime.asSeconds();
+
+    // Si está muerto, forzar estado DEAD y no actualizar nada más
+    if (isDead()) {
+        if (mCurrentState != PlayerState::DEAD) {
+            setState(PlayerState::DEAD);
+        }
+        return;
+    }
 
     // Actualizar invulnerabilidad
     if (mIsInvulnerable) {
@@ -322,6 +338,9 @@ void Player::setState(PlayerState newState, bool force) {
         case PlayerState::HIDING:
             newTex = &mTextureIdle; // Usar Idle pero modificar color
             break;
+        case PlayerState::DEAD:
+            newTex = &mTextureDead;
+            break;
     }
 
     mSprite.setTexture(*newTex, true); // Reset rect
@@ -385,6 +404,10 @@ float Player::getTextureScale(const sf::Texture* texture) const {
     else if (texture == &mTextureSyringeAttack) {
         targetHeight *= 0.85f;
     }
+    // 6. Muerte
+    else if (texture == &mTextureDead) {
+        targetHeight *= 0.25f; // Reducir drásticamente (25% de la altura normal)
+    }
 
     float currentHeight = (float)referenceTexture->getSize().y;
     if (currentHeight <= 0) return 1.f;
@@ -435,8 +458,8 @@ void Player::takeDamage(int damage) {
     mIsInvulnerable = true;
     mInvulnerableTimer = 1.0f; // 1 segundo
 
-    // Reproducir sonido de herido (pendiente de implementar Audio Manager o similar)
-    // Por ahora solo visual
+    // Reproducir sonido de herido
+    mSoundPain.play();
 }
 
 int Player::getLives() const { return mLives; }

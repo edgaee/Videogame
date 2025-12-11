@@ -10,8 +10,8 @@
 
 namespace Config {
     // === VENTANA ===
-    constexpr int WINDOW_WIDTH  = 2560;
-    constexpr int WINDOW_HEIGHT = 1440;
+    constexpr int WINDOW_WIDTH  = 1920;
+    constexpr int WINDOW_HEIGHT = 1080;
     constexpr int WORLD_WIDTH   = 4000; // Ancho total del nivel
     constexpr int FPS_LIMIT = 165;
     constexpr const char* WINDOW_TITLE = "Dexter: Dark Passenger";

@@ -1,5 +1,6 @@
 #pragma once
 #include <SFML/Graphics.hpp>
+#include <SFML/Audio.hpp>
 #include "Config.hpp"
 #include <vector>
 
@@ -14,7 +15,8 @@ enum class PlayerState {
     PRE_JUMP,       // Preparación salto
     JUMPING,        // En el aire
     LANDING,        // Aterrizaje
-    HIDING          // Escondido
+    HIDING,         // Escondido
+    DEAD            // Muerto
 };
 
 class Player {
@@ -80,6 +82,11 @@ private:
     
     // Texturas Ataque
     sf::Texture mTextureSyringeAttack; // Un solo frame de ataque
+    sf::Texture mTextureDead;          // Textura muerto
+
+    // Audio
+    sf::SoundBuffer mBufferPain;
+    sf::Sound mSoundPain;
 
     // Variables de Física
     sf::Vector2f mVelocity;
