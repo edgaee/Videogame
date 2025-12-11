@@ -1,43 +1,34 @@
-# EjemplosJuego
+🩸💉 Dexter: The Dark Passenger
 
-El proyecto esta desarrollado sobre MinGW64 utilizando Msys2
-y como editor se esta utilizando Visual Studio Code.
+El proyecto es un videojuego estilo side-scroller 2D inspirado en la serie "Dexter", donde nuestro protagonista es el mismo Dexter Morgan.
 
-## Prerequisitos
+🎯 Objetivos
 
-[Instalar las herramientas necesarias](./docs/herramientas.md)
+Como se mencionó anteriormente, el juego es estilo side-scroller, el usuario necesitará recolectar los coleccionables (blood slides), derrotar a los enemigos sin que sea detectado, hasta llegar al jefe final, al que deberá derrotar, todo esto con 3 vidas.
 
-[Instalar las Extensiones VSCode](./docs/extensiones.md)
+🕹️ Controles
 
-[Instalar las librerias](./docs/librerias.md)
+Flechas del teclado: Movimiento
+Q: Sacar jering
+C: Atacar
+E: Interactuar con los lugares de escondite
 
-[Clonar el repositorio](./docs/fork.md)
+⚙️ Mecánicas
 
-## Como ejecutar los ejemplos
+Conseguir todas las blood slides en el mapa.
+Derrotar a todos los enemigos.
+Eliminar a Doakes (Boss final).
 
-Instalar todas las dependencias descritas arriba y dentro de una terminal de vscode ejecutar:
+👥 Equipo
 
-> make run'NombreEjecutable'
+Lider: Edgar Alejandro Rodríguez Sáenz (@edgaee)
+Integrante: Héctor Hugo Bermúdez Zepeda (@HUGOBOT17)
 
-Por ejemplo para ejecutar '00_Ventana.cpp' correr el comando en la terminal de vscode:
+🛠️ Tecnologías
 
-> make run00_Ventana
+Lenguaje: C++
 
-## Errores comunes
-- [Los diagramas de PUML no se visualizan bien]()
+📜 Créditos
 
-## Buenas Practicas
-- [Como Crear un buen readme](https://www.makeareadme.com/)
-- [Patrones de diseño](https://refactoring.guru/es/design-patterns)
-- [Como hacer commits semanticos]()
-- [Como estructurar un proyecto]()
-- [Que tipos de licencias existen]()
-
-## Tutoriales Github
-- [Creacion de un repositorio]()
-- [Como colaborar en un proyecto]()
-- [Solicitar developer pack]()
-
-## Recursos Gratis
-- [Fuentes de texto gratis](https://www.dafont.com/es/)
-- [Recursos gratis de Videojuegos](https://opengameart.org/)
+El juego está inspirado en las mecánicas del juego "Gunpoint"
+Además de la ya mencionada temática de la serie de Dexter.
