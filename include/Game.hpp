@@ -61,4 +61,9 @@ private:
     sf::Sprite mStartScreenSprite;
     sf::Text mTitleText;
     sf::Text mPressEnterText;
+    
+    // Pantalla de Game Over
+    bool mIsGameOver;
+    sf::Text mGameOverText;
+    sf::Text mRestartText;
 };

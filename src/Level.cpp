@@ -1,14 +1,26 @@
 #include "Level.hpp"
 #include "Config.hpp"
 #include <iostream>
+#include <algorithm>
 
-Level::Level() {
+Level::Level() : mPlayerDetected(false) {
     // Cargar texturas individuales
     if (!mTexFloor.loadFromFile(std::string(Config::IMAGE_PATH) + "tile_floor.png")) {
         std::cerr << "Error: No se pudo cargar tile_floor.png" << std::endl;
     }
     if (!mTexVent.loadFromFile(std::string(Config::IMAGE_PATH) + "tile_vent1.png")) {
         std::cerr << "Error: No se pudo cargar tile_vent1.png" << std::endl;
+    }
+    
+    // Cargar texturas de enemigos
+    if (!mTexEnemyWalk1.loadFromFile(std::string(Config::IMAGE_PATH) + "policia1_caminando1.png")) {
+        std::cerr << "Error: No se pudo cargar policia1_caminando1.png" << std::endl;
+    }
+    if (!mTexEnemyWalk2.loadFromFile(std::string(Config::IMAGE_PATH) + "policia1_caminando2.png")) {
+        std::cerr << "Error: No se pudo cargar policia1_caminando2.png" << std::endl;
+    }
+    if (!mTexEnemyIdle.loadFromFile(std::string(Config::IMAGE_PATH) + "policia1_default.png")) {
+        std::cerr << "Error: No se pudo cargar policia1_default.png" << std::endl;
     }
 }
 
@@ -49,10 +61,42 @@ void Level::loadLevel1() {
 
     // 2. Zona oscura bajo el conducto derecho
     mHidingSpots.emplace_back(sf::Vector2f(100.f, 150.f), sf::Vector2f(1300.f, 850.f));
+    
+    // --- ENEMIGOS ---
+    mEnemies.clear();
+    mPlayerDetected = false;
+    
+    // El suelo está en Y=1000 (tope del tile), los enemigos deben tener los pies ahí
+    // Offset para compensar el espacio transparente en la parte inferior de las texturas
+    float groundLevel = 1000.f;
+    float enemyYOffset = 65.f; // Ajustado para que los pies toquen el suelo exactamente
+    
+    // Enemigo 1: Patrulla en el suelo (zona izquierda)
+    // Posición inicial en el suelo, patrulla entre X=600 y X=1000
+    mEnemies.emplace_back(&mTexEnemyWalk1, &mTexEnemyWalk2, &mTexEnemyIdle,
+                          sf::Vector2f(700.f, groundLevel + enemyYOffset), 600.f, 1000.f);
+    
+    // Enemigo 2: Patrulla en el suelo (zona derecha)
+    // Posición inicial en el suelo, patrulla entre X=1400 y X=1900
+    mEnemies.emplace_back(&mTexEnemyWalk1, &mTexEnemyWalk2, &mTexEnemyIdle,
+                          sf::Vector2f(1500.f, groundLevel + enemyYOffset), 1400.f, 1900.f);
 }
 
-void Level::update(float dt) {
-    // Aquí podríamos animar tiles, mover plataformas móviles, etc.
+void Level::update(float dt, Player& player) {
+    // Actualizar enemigos
+    for (auto& enemy : mEnemies) {
+        enemy.update(dt);
+        
+        // Verificar detección del jugador
+        if (enemy.checkPlayerDetection(player)) {
+            if (!mPlayerDetected) {
+                mPlayerDetected = true;
+                std::cout << "========== GAME OVER ==========" << std::endl;
+                std::cout << "¡Dexter ha sido detectado!" << std::endl;
+                std::cout << "================================" << std::endl;
+            }
+        }
+    }
 }
 
 void Level::draw(sf::RenderWindow& window) {
@@ -65,74 +109,103 @@ void Level::draw(sf::RenderWindow& window) {
     for (auto& platform : mPlatforms) {
         platform.draw(window);
     }
+    
+    // Dibujar Enemigos
+    for (auto& enemy : mEnemies) {
+        enemy.draw(window);
+    }
 }
 
 const std::vector<HidingSpot>& Level::getHidingSpots() const {
     return mHidingSpots;
 }
 
+bool Level::isPlayerDetected() const {
+    return mPlayerDetected;
+}
+
 void Level::checkCollisions(Player& player, float dt) {
-    // Lógica de colisión trasladada desde Player.cpp
-    // Necesitamos que Player exponga métodos para mover y obtener velocidad
-    
     sf::Vector2f velocity = player.getVelocity();
     
-    // 1. Movimiento en X
+    // Limitar velocidad máxima de caída
+    const float maxFallSpeed = 500.f;
+    if (velocity.y > maxFallSpeed) {
+        velocity.y = maxFallSpeed;
+        player.setVelocity(velocity.x, velocity.y);
+    }
+    
+    // Guardar posición inicial
+    sf::Vector2f startPos = player.getPosition();
+    
+    // === MOVIMIENTO Y COLISIÓN EN X ===
     float moveX = velocity.x * dt;
-    player.move(moveX, 0.f);
-    
-    // Colisión X
-    sf::FloatRect playerBounds = player.getBounds();
-    sf::FloatRect intersection;
-    
-    for (const auto& platform : mPlatforms) {
-        sf::FloatRect platBounds = platform.getBounds();
-        if (playerBounds.intersects(platBounds, intersection)) {
-            if (intersection.height < 10.f) continue; // Ignorar roces suelo/techo
-
-            if (moveX > 0) { // Derecha
-                player.setPosition(platBounds.left - playerBounds.width / 2.f, player.getPosition().y);
-            } else if (moveX < 0) { // Izquierda
-                player.setPosition(platBounds.left + platBounds.width + playerBounds.width / 2.f, player.getPosition().y);
+    if (moveX != 0.f) {
+        player.move(moveX, 0.f);
+        sf::FloatRect playerBounds = player.getBounds();
+        
+        for (const auto& platform : mPlatforms) {
+            sf::FloatRect platBounds = platform.getBounds();
+            sf::FloatRect intersection;
+            
+            if (playerBounds.intersects(platBounds, intersection)) {
+                // Solo corregir colisión lateral si:
+                // 1. La intersección es más alta que ancha (colisión lateral, no vertical)
+                // 2. La intersección tiene una altura significativa
+                if (intersection.height > intersection.width && intersection.height > 10.f) {
+                    // Revertir el movimiento X en lugar de reposicionar
+                    player.move(-moveX, 0.f);
+                    velocity.x = 0.f;
+                    player.setVelocity(0.f, velocity.y);
+                    break;
+                }
             }
-            player.setVelocity(0.f, velocity.y); // Stop X
         }
     }
 
-    // 2. Movimiento en Y
-    // Gravedad ya aplicada en Player::update, aquí solo integramos posición
+    // === MOVIMIENTO Y COLISIÓN EN Y ===
     float moveY = velocity.y * dt;
     player.move(0.f, moveY);
-
-    // Colisión Y
-    playerBounds = player.getBounds();
-    bool onGround = false;
+    
+    sf::FloatRect playerBounds = player.getBounds();
+    float playerCenterX = player.getPosition().x;
+    float playerHalfWidth = playerBounds.width / 2.f;
+    float playerPosY = player.getPosition().y;
 
     for (const auto& platform : mPlatforms) {
         sf::FloatRect platBounds = platform.getBounds();
+        sf::FloatRect intersection;
+        
         if (playerBounds.intersects(platBounds, intersection)) {
-            if (intersection.width < 10.f) continue; // Ignorar roces paredes
-
-            if (moveY > 0) { // Cayendo
-                // Solo aterrizar si la colisión es superficial (no estamos dentro del bloque)
-                // Si la intersección es muy alta, probablemente es una colisión lateral que pasó el filtro de width
-                if (intersection.height <= moveY + 15.f) { 
-                    player.setPosition(player.getPosition().x, platBounds.top);
-                    player.setVelocity(player.getVelocity().x, 0.f); // Stop Y
-                    player.setGrounded(true);
-                    onGround = true;
+            // Calcular superposición horizontal real
+            float overlapLeft = std::max(playerCenterX - playerHalfWidth, platBounds.left);
+            float overlapRight = std::min(playerCenterX + playerHalfWidth, platBounds.left + platBounds.width);
+            float overlapWidth = overlapRight - overlapLeft;
+            float requiredOverlap = playerBounds.width * 0.15f; // 15% mínimo
+            
+            if (overlapWidth >= requiredOverlap) {
+                if (velocity.y > 0) { // Cayendo
+                    // Aterrizar si:
+                    // 1. Estamos cayendo (velocity.y > 0)
+                    // 2. Los pies del jugador están cerca del tope de la plataforma
+                    // 3. La intersección es superficial (no estamos muy adentro)
+                    if (intersection.height <= std::abs(moveY) + 20.f) {
+                        player.setPosition(player.getPosition().x, platBounds.top);
+                        player.setVelocity(player.getVelocity().x, 0.f);
+                        player.setGrounded(true);
+                        break; // Solo aterrizar en una plataforma
+                    }
+                } else if (velocity.y < 0) { // Saltando
+                    // Golpear techo si la intersección es superficial
+                    if (intersection.height <= std::abs(moveY) + 10.f) {
+                        player.setVelocity(player.getVelocity().x, 0.f);
+                    }
                 }
-            } else if (moveY < 0) { // Saltando (Techo)
-                player.setPosition(player.getPosition().x, platBounds.top + platBounds.height + playerBounds.height);
-                player.setVelocity(player.getVelocity().x, 0.f); // Stop Y
             }
         }
     }
     
-    // Fallback suelo base (si se cae del mapa)
-    // El suelo está en Y=1000, así que si baja de 1200 es que cayó al vacío
+    // Fallback: respawnear si cae del mapa
     if (player.getPosition().y > 1200.f) { 
-         // Reset al spawn
          player.setPosition(Config::PLAYER_INITIAL_X, Config::PLAYER_INITIAL_Y);
          player.setVelocity(0.f, 0.f);
          player.setGrounded(true);

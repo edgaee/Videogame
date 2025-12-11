@@ -8,7 +8,8 @@ Game::Game()
     : mWindow(sf::VideoMode(Config::WINDOW_WIDTH, Config::WINDOW_HEIGHT), Config::WINDOW_TITLE),
       mFrameCount(0),
       mFpsUpdateTimer(0.f),
-      mIsGameStarted(false)
+      mIsGameStarted(false),
+      mIsGameOver(false)
 {
     // Limitar el framerate a 60 FPS para consistencia
     mWindow.setFramerateLimit(Config::FPS_LIMIT);
@@ -65,6 +66,28 @@ Game::Game()
         sf::FloatRect enterBounds = mPressEnterText.getLocalBounds();
         mPressEnterText.setOrigin(enterBounds.width / 2.f, 0.f);
         mPressEnterText.setPosition(Config::WINDOW_WIDTH / 2.f, Config::WINDOW_HEIGHT - 150.f);
+        
+        // Configurar texto de Game Over
+        mGameOverText.setFont(mDebugFont);
+        mGameOverText.setString("GAME OVER");
+        mGameOverText.setCharacterSize(100);
+        mGameOverText.setFillColor(sf::Color::Red);
+        mGameOverText.setOutlineColor(sf::Color::Black);
+        mGameOverText.setOutlineThickness(3.f);
+        
+        sf::FloatRect gameOverBounds = mGameOverText.getLocalBounds();
+        mGameOverText.setOrigin(gameOverBounds.width / 2.f, gameOverBounds.height / 2.f);
+        mGameOverText.setPosition(Config::WINDOW_WIDTH / 2.f, Config::WINDOW_HEIGHT / 2.f - 50.f);
+        
+        // Configurar texto de reinicio
+        mRestartText.setFont(mDebugFont);
+        mRestartText.setString("Dexter ha sido detectado!\nPresiona R para reiniciar");
+        mRestartText.setCharacterSize(30);
+        mRestartText.setFillColor(sf::Color::White);
+        
+        sf::FloatRect restartBounds = mRestartText.getLocalBounds();
+        mRestartText.setOrigin(restartBounds.width / 2.f, 0.f);
+        mRestartText.setPosition(Config::WINDOW_WIDTH / 2.f, Config::WINDOW_HEIGHT / 2.f + 50.f);
     }
 
     // Cargar Nivel
@@ -107,6 +130,16 @@ void Game::processEvents() {
         if (!mIsGameStarted && event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::Return) {
             mIsGameStarted = true;
         }
+        
+        // Detectar R para reiniciar después de Game Over
+        if (mIsGameOver && event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::R) {
+            // Reiniciar el juego
+            mIsGameOver = false;
+            mPlayer.setPosition(Config::PLAYER_INITIAL_X, Config::PLAYER_INITIAL_Y);
+            mPlayer.setVelocity(0.f, 0.f);
+            mPlayer.setHidden(false);
+            mLevel.loadLevel1(); // Recargar el nivel (resetea enemigos)
+        }
 
         // Detectar 'E' para esconderse
         if (mIsGameStarted && event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::E) {
@@ -127,6 +160,9 @@ void Game::processEvents() {
 
 // Actualización de lógica
 void Game::update(sf::Time deltaTime) {
+    // No actualizar si estamos en Game Over
+    if (mIsGameOver) return;
+    
     // Solo actualizar el jugador si el juego ha comenzado
     if (mIsGameStarted) {
         float dt = deltaTime.asSeconds();
@@ -134,10 +170,16 @@ void Game::update(sf::Time deltaTime) {
         // 1. Actualizar Player (Input, Animación, Gravedad)
         mPlayer.update(deltaTime);
         
-        // 2. Actualizar Nivel (Entidades)
-        mLevel.update(dt);
+        // 2. Actualizar Nivel (Entidades y Enemigos)
+        mLevel.update(dt, mPlayer);
         
-        // 3. Resolver Colisiones (Nivel mueve al Player)
+        // 3. Verificar si el jugador fue detectado
+        if (mLevel.isPlayerDetected()) {
+            mIsGameOver = true;
+            return;
+        }
+        
+        // 4. Resolver Colisiones (Nivel mueve al Player)
         mLevel.checkCollisions(mPlayer, dt);
 
         // Actualizar Cámara (Lerp)
@@ -223,6 +265,24 @@ void Game::render() {
         
         // Dibujar texto "Presiona ENTER para comenzar"
         mWindow.draw(mPressEnterText);
+    } else if (mIsGameOver) {
+        // Pantalla de Game Over
+        // Aplicar cámara del juego para ver el nivel de fondo
+        mWindow.setView(mWorldView);
+        
+        // Dibujar el nivel de fondo (oscurecido)
+        mLevel.draw(mWindow);
+        mPlayer.draw(mWindow);
+        
+        // Overlay oscuro
+        mWindow.setView(mWindow.getDefaultView());
+        sf::RectangleShape overlay(sf::Vector2f(Config::WINDOW_WIDTH, Config::WINDOW_HEIGHT));
+        overlay.setFillColor(sf::Color(0, 0, 0, 180));
+        mWindow.draw(overlay);
+        
+        // Dibujar textos de Game Over
+        mWindow.draw(mGameOverText);
+        mWindow.draw(mRestartText);
     } else {
         // Aplicar cámara del juego
         mWindow.setView(mWorldView);
