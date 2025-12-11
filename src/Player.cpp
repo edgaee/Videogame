@@ -133,18 +133,18 @@ void Player::handleInput(float dt) {
     bool isMoving = false;
     float currentSpeed = mSpeed;
 
-    // Agacharse (S)
-    bool isCrouchingInput = sf::Keyboard::isKeyPressed(sf::Keyboard::S);
+    // Agacharse (Flecha Abajo)
+    bool isCrouchingInput = sf::Keyboard::isKeyPressed(sf::Keyboard::Down);
     
     if (isCrouchingInput) {
         currentSpeed *= 0.5f;
     }
 
-    if (sf::Keyboard::isKeyPressed(sf::Keyboard::A)) {
+    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Left)) {
         mVelocity.x = -currentSpeed;
         mFacingLeft = true;
         isMoving = true;
-    } else if (sf::Keyboard::isKeyPressed(sf::Keyboard::D)) {
+    } else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Right)) {
         mVelocity.x = currentSpeed;
         mFacingLeft = false;
         isMoving = true;
@@ -153,8 +153,8 @@ void Player::handleInput(float dt) {
     bool canJump = (mCurrentState == PlayerState::IDLE || mCurrentState == PlayerState::RUNNING || 
                     mCurrentState == PlayerState::CROUCHING || mCurrentState == PlayerState::CROUCH_WALKING);
                     
-    // Saltar (W)
-    if (sf::Keyboard::isKeyPressed(sf::Keyboard::W) && canJump) {
+    // Saltar (Flecha Arriba)
+    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Up) && canJump) {
         setState(PlayerState::PRE_JUMP);
         mPreJumpTimer = 0.1f;
         mVelocity.x = 0.f;
