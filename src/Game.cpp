@@ -25,14 +25,24 @@ Game::Game()
     mWorldView = mWindow.getDefaultView();
 
     // Configurar Pantalla de Inicio
-    // Cargar imagen dexter_jeringa.png
+    // Cargar imagen dexter_default.png (izquierda)
+    if (mStartScreenTexture2.loadFromFile(std::string(Config::IMAGE_PATH) + "dexter_default.png")) {
+        mStartScreenSprite2.setTexture(mStartScreenTexture2);
+        
+        sf::FloatRect bounds2 = mStartScreenSprite2.getLocalBounds();
+        mStartScreenSprite2.setOrigin(bounds2.width / 2.f, bounds2.height / 2.f);
+        mStartScreenSprite2.setScale(1.f, 1.f); // Escala normal
+        mStartScreenSprite2.setPosition(Config::WINDOW_WIDTH / 2.f - 200.f, Config::WINDOW_HEIGHT / 2.f);
+    }
+    
+    // Cargar imagen dexter_jeringa.png (derecha)
     if (mStartScreenTexture.loadFromFile(std::string(Config::IMAGE_PATH) + "dexter_jeringa.png")) {
         mStartScreenSprite.setTexture(mStartScreenTexture);
         
-        // Centrar el sprite en la pantalla
         sf::FloatRect bounds = mStartScreenSprite.getLocalBounds();
         mStartScreenSprite.setOrigin(bounds.width / 2.f, bounds.height / 2.f);
-        mStartScreenSprite.setPosition(Config::WINDOW_WIDTH / 2.f, Config::WINDOW_HEIGHT / 2.f);
+        mStartScreenSprite.setScale(1.f, 1.f); // Escala normal
+        mStartScreenSprite.setPosition(Config::WINDOW_WIDTH / 2.f + 200.f, Config::WINDOW_HEIGHT / 2.f);
     }
 
     // Cargar fuente para debug y título
@@ -304,8 +314,9 @@ void Game::render() {
         // Resetear vista para UI
         mWindow.setView(mWindow.getDefaultView());
 
-        // Dibujar imagen de dexter_jeringa centrada
-        mWindow.draw(mStartScreenSprite);
+        // Dibujar imágenes de Dexter
+        mWindow.draw(mStartScreenSprite2); // dexter_default (izquierda)
+        mWindow.draw(mStartScreenSprite);  // dexter_jeringa (derecha)
         
         // Dibujar título "Dexter Game"
         mWindow.draw(mTitleText);

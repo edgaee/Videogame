@@ -69,6 +69,8 @@ private:
     bool mIsGameStarted;
     sf::Texture mStartScreenTexture;
     sf::Sprite mStartScreenSprite;
+    sf::Texture mStartScreenTexture2;
+    sf::Sprite mStartScreenSprite2;
     sf::Text mTitleText;
     sf::Text mPressEnterText;
     
