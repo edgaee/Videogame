@@ -8,11 +8,16 @@ Game::Game()
     : mWindow(sf::VideoMode(Config::WINDOW_WIDTH, Config::WINDOW_HEIGHT), Config::WINDOW_TITLE),
       mFrameCount(0),
       mFpsUpdateTimer(0.f),
-      mIsGameStarted(false),
-      mIsGameOver(false)
+      mIsGameStarted(false)
 {
     // Limitar el framerate a 60 FPS para consistencia
     mWindow.setFramerateLimit(Config::FPS_LIMIT);
+
+    // Cargar Fondo
+    if (!mBgTexture.loadFromFile(std::string(Config::IMAGE_PATH) + "city_sunset.png")) {
+        // Fallback
+    }
+    mBgSprite.setTexture(mBgTexture);
 
     // Inicializar Vista (Cámara)
     mWorldView = mWindow.getDefaultView();
@@ -39,10 +44,15 @@ Game::Game()
             mFpsText.setFillColor(sf::Color::Green);
             mFpsText.setPosition(10.f, 10.f);
 
+            mPositionText.setFont(mDebugFont);
+            mPositionText.setCharacterSize(16);
+            mPositionText.setFillColor(sf::Color::Yellow);
+            mPositionText.setPosition(10.f, 40.f);
+
             mStateText.setFont(mDebugFont);
             mStateText.setCharacterSize(16);
             mStateText.setFillColor(sf::Color::Cyan);
-            mStateText.setPosition(10.f, 35.f);
+            mStateText.setPosition(10.f, 70.f);
         }
         
         // Configurar texto de título "Dexter Game" para pantalla de inicio
@@ -173,8 +183,8 @@ void Game::update(sf::Time deltaTime) {
         // 2. Actualizar Nivel (Entidades y Enemigos)
         mLevel.update(dt, mPlayer);
         
-        // 3. Verificar si el jugador fue detectado
-        if (mLevel.isPlayerDetected()) {
+        // 3. Verificar Game Over (Vidas)
+        if (mPlayer.isDead()) {
             mIsGameOver = true;
             return;
         }
@@ -226,7 +236,10 @@ void Game::updateDebugInfo(sf::Time deltaTime) {
     }
 
     // Actualizar información de debug
-    // (La posición XY ha sido removida por solicitud del usuario)
+    std::ostringstream posOss;
+    posOss << "Pos: (" << (int)mPlayer.getPosition().x << ", " << (int)mPlayer.getPosition().y << ")";
+    mPositionText.setString(posOss.str());
+    mPositionText.setPosition(10.f, 40.f); // Debajo de FPS
 
     // Actualizar estado del jugador
     std::string stateStr = "Estado: ";
@@ -287,17 +300,29 @@ void Game::render() {
         // Aplicar cámara del juego
         mWindow.setView(mWorldView);
 
+        // 0. Dibujar Fondo (Parallax simple: fijo con la cámara o movimiento lento)
+        // Para que sea fijo (skybox), dibujamos con la vista por defecto o ajustamos posición
+        // Opción A: Fondo estático (siempre cubre la pantalla)
+        sf::View currentView = mWindow.getView();
+        mWindow.setView(mWindow.getDefaultView());
+        mWindow.draw(mBgSprite);
+        mWindow.setView(currentView);
+
         // 2. Dibujar objetos (Delegar al Nivel)
         mLevel.draw(mWindow);
         
         // Dibujar Player
         mPlayer.draw(mWindow);
+
+        // 3. Dibujar HUD (Interfaz)
+        mHUD.draw(mWindow, mPlayer.getLives());
         
         if (Config::DEBUG_MODE) {
             // Dibujar UI de debug (sobre todo lo demás)
             // Usar defaultView para que el texto quede fijo en pantalla
             mWindow.setView(mWindow.getDefaultView());
             mWindow.draw(mFpsText);
+            mWindow.draw(mPositionText);
             mWindow.draw(mStateText);
         }
     }

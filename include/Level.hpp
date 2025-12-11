@@ -24,13 +24,13 @@ public:
 
     // Getters para Game (si fueran necesarios)
     const std::vector<HidingSpot>& getHidingSpots() const;
-    
-    // Verifica si algún enemigo detectó al jugador
     bool isPlayerDetected() const;
 
 private:
     sf::Texture mTexFloor;
     sf::Texture mTexVent;
+    sf::Texture mTexProp1;
+    sf::Texture mTexProp2;
     std::vector<Platform> mPlatforms;
     std::vector<HidingSpot> mHidingSpots;
     
@@ -38,6 +38,7 @@ private:
     sf::Texture mTexEnemyWalk1;
     sf::Texture mTexEnemyWalk2;
     sf::Texture mTexEnemyIdle;
+    sf::Texture mTexEnemyShoot;
     std::vector<Enemy> mEnemies;
     bool mPlayerDetected;
 };

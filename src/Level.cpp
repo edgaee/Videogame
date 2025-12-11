@@ -3,30 +3,27 @@
 #include <iostream>
 #include <algorithm>
 
-Level::Level() : mPlayerDetected(false) {
+Level::Level() {
     // Cargar texturas individuales
-    if (!mTexFloor.loadFromFile(std::string(Config::IMAGE_PATH) + "tile_floor.png")) {
-        std::cerr << "Error: No se pudo cargar tile_floor.png" << std::endl;
-    }
-    if (!mTexVent.loadFromFile(std::string(Config::IMAGE_PATH) + "tile_vent1.png")) {
-        std::cerr << "Error: No se pudo cargar tile_vent1.png" << std::endl;
-    }
+    std::string path = Config::IMAGE_PATH;
+    if (!mTexFloor.loadFromFile(path + "tile_floor.png")) std::cerr << "Error floor" << std::endl;
+    if (!mTexVent.loadFromFile(path + "tile_vent1.png")) std::cerr << "Error vent" << std::endl;
     
-    // Cargar texturas de enemigos
-    if (!mTexEnemyWalk1.loadFromFile(std::string(Config::IMAGE_PATH) + "policia1_caminando1.png")) {
-        std::cerr << "Error: No se pudo cargar policia1_caminando1.png" << std::endl;
-    }
-    if (!mTexEnemyWalk2.loadFromFile(std::string(Config::IMAGE_PATH) + "policia1_caminando2.png")) {
-        std::cerr << "Error: No se pudo cargar policia1_caminando2.png" << std::endl;
-    }
-    if (!mTexEnemyIdle.loadFromFile(std::string(Config::IMAGE_PATH) + "policia1_default.png")) {
-        std::cerr << "Error: No se pudo cargar policia1_default.png" << std::endl;
-    }
+    // Props
+    if (!mTexProp1.loadFromFile(path + "archivero.png")) std::cerr << "Error archivero" << std::endl;
+    if (!mTexProp2.loadFromFile(path + "escritorio.png")) std::cerr << "Error escritorio" << std::endl;
+
+    // Enemigos
+    if (!mTexEnemyWalk1.loadFromFile(path + "policia1_caminando1.png")) std::cerr << "Error enemy w1" << std::endl;
+    if (!mTexEnemyWalk2.loadFromFile(path + "policia1_caminando2.png")) std::cerr << "Error enemy w2" << std::endl;
+    if (!mTexEnemyIdle.loadFromFile(path + "policia1_default.png")) std::cerr << "Error enemy idle" << std::endl;
+    if (!mTexEnemyShoot.loadFromFile(path + "policia1_arma2.png")) std::cerr << "Error enemy shoot" << std::endl;
 }
 
 void Level::loadLevel1() {
     mPlatforms.clear();
     mHidingSpots.clear();
+    mEnemies.clear();
 
     // --- DISEÑO NIVEL 1: MIAMI METRO POLICE ---
     
@@ -41,20 +38,6 @@ void Level::loadLevel1() {
         mPlatforms.emplace_back(&mTexFloor, sf::Vector2f(startX + i * 64.f, groundY));
     }
 
-    // 2. Plataformas Elevadas (Aires Acondicionados)
-    // Plataforma 1: Izquierda baja
-    mPlatforms.emplace_back(&mTexVent, sf::Vector2f(200.f, 900.f));
-    
-    // Plataforma 2: Centro media
-    mPlatforms.emplace_back(&mTexVent, sf::Vector2f(500.f, 750.f));
-    
-    // Plataforma 3: Derecha alta
-    mPlatforms.emplace_back(&mTexVent, sf::Vector2f(800.f, 600.f));
-    
-    // Plataforma 4: Más a la derecha
-    mPlatforms.emplace_back(&mTexVent, sf::Vector2f(1100.f, 750.f));
-
-
     // --- ESCONDITES ---
     // 1. Puerta oscura en el pasillo inicial
     mHidingSpots.emplace_back(sf::Vector2f(80.f, 150.f), sf::Vector2f(400.f, 850.f));
@@ -63,39 +46,15 @@ void Level::loadLevel1() {
     mHidingSpots.emplace_back(sf::Vector2f(100.f, 150.f), sf::Vector2f(1300.f, 850.f));
     
     // --- ENEMIGOS ---
-    mEnemies.clear();
-    mPlayerDetected = false;
-    
-    // El suelo está en Y=1000 (tope del tile), los enemigos deben tener los pies ahí
-    // Offset para compensar el espacio transparente en la parte inferior de las texturas
-    float groundLevel = 1000.f;
-    float enemyYOffset = 65.f; // Ajustado para que los pies toquen el suelo exactamente
-    
-    // Enemigo 1: Patrulla en el suelo (zona izquierda)
-    // Posición inicial en el suelo, patrulla entre X=600 y X=1000
-    mEnemies.emplace_back(&mTexEnemyWalk1, &mTexEnemyWalk2, &mTexEnemyIdle,
-                          sf::Vector2f(700.f, groundLevel + enemyYOffset), 600.f, 1000.f);
-    
-    // Enemigo 2: Patrulla en el suelo (zona derecha)
-    // Posición inicial en el suelo, patrulla entre X=1400 y X=1900
-    mEnemies.emplace_back(&mTexEnemyWalk1, &mTexEnemyWalk2, &mTexEnemyIdle,
-                          sf::Vector2f(1500.f, groundLevel + enemyYOffset), 1400.f, 1900.f);
+    // Doakes patrullando el pasillo principal
+    mEnemies.emplace_back(&mTexEnemyWalk1, &mTexEnemyWalk2, &mTexEnemyIdle, &mTexEnemyShoot,
+                          sf::Vector2f(1800.f, 1000.f), 1500.f, 2200.f);
 }
 
 void Level::update(float dt, Player& player) {
     // Actualizar enemigos
     for (auto& enemy : mEnemies) {
-        enemy.update(dt);
-        
-        // Verificar detección del jugador
-        if (enemy.checkPlayerDetection(player)) {
-            if (!mPlayerDetected) {
-                mPlayerDetected = true;
-                std::cout << "========== GAME OVER ==========" << std::endl;
-                std::cout << "¡Dexter ha sido detectado!" << std::endl;
-                std::cout << "================================" << std::endl;
-            }
-        }
+        enemy.update(dt, player);
     }
 }
 

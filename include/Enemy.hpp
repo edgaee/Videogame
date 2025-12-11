@@ -1,14 +1,16 @@
 #pragma once
 #include <SFML/Graphics.hpp>
+#include <SFML/Audio.hpp>
 #include "Config.hpp"
 
 class Player; // Forward declaration
 
 // Estados del enemigo
 enum class EnemyState {
-    WALKING,    // Caminando (patrullando)
-    TURNING,    // Girando (momento de pausa antes de cambiar dirección)
-    IDLE        // Quieto (no usado por ahora)
+    PATROLLING, // Caminando (patrullando)
+    CHASING,    // Persiguiendo al jugador
+    SHOOTING,   // Disparando
+    TURNING     // Girando (momento de pausa antes de cambiar dirección)
 };
 
 class Enemy {
@@ -18,15 +20,16 @@ public:
      * @param textureWalk1 Textura del primer frame de caminata
      * @param textureWalk2 Textura del segundo frame de caminata
      * @param textureIdle Textura cuando está quieto/girando
+     * @param textureShoot Textura disparando
      * @param position Posición inicial (X, Y)
      * @param patrolMinX Límite izquierdo del patrullaje
      * @param patrolMaxX Límite derecho del patrullaje
      */
-    Enemy(sf::Texture* textureWalk1, sf::Texture* textureWalk2, sf::Texture* textureIdle,
+    Enemy(sf::Texture* textureWalk1, sf::Texture* textureWalk2, sf::Texture* textureIdle, sf::Texture* textureShoot,
           sf::Vector2f position, float patrolMinX, float patrolMaxX);
     
     // Actualiza el movimiento y animación del enemigo
-    void update(float dt);
+    void update(float dt, Player& player);
     
     // Dibuja el sprite y el cono de visión
     void draw(sf::RenderWindow& window);
@@ -54,6 +57,14 @@ private:
     sf::Texture* mTextureWalk1;
     sf::Texture* mTextureWalk2;
     sf::Texture* mTextureIdle;
+    sf::Texture* mTextureShoot;
+
+    // Audio
+    sf::SoundBuffer mBufferChasing;
+    sf::Sound mSoundChasing;
+    sf::SoundBuffer mBufferGunshot;
+    sf::Sound mSoundGunshot;
+    bool mChasingSoundPlayed;
     
     // Patrullaje
     float mPatrolStart;
@@ -70,4 +81,9 @@ private:
     // Configuración del cono de visión
     float mVisionDistance;  // Distancia del cono
     float mVisionAngle;     // Ángulo del cono (medio ángulo)
+
+    // Combate
+    float mShootTimer;
+    float mShootCooldown;
+    float mLostSightTimer; // Tiempo sin ver al jugador antes de volver a patrullar
 };

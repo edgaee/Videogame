@@ -3,22 +3,36 @@
 #include <cmath>
 #include <iostream>
 
-Enemy::Enemy(sf::Texture* textureWalk1, sf::Texture* textureWalk2, sf::Texture* textureIdle,
+Enemy::Enemy(sf::Texture* textureWalk1, sf::Texture* textureWalk2, sf::Texture* textureIdle, sf::Texture* textureShoot,
              sf::Vector2f position, float patrolMinX, float patrolMaxX)
     : mTextureWalk1(textureWalk1),
       mTextureWalk2(textureWalk2),
       mTextureIdle(textureIdle),
+      mTextureShoot(textureShoot),
       mPatrolStart(patrolMinX),
       mPatrolEnd(patrolMaxX),
       mSpeed(150.f),
       mMovingRight(true),
-      mCurrentState(EnemyState::WALKING),
+      mCurrentState(EnemyState::PATROLLING),
       mAnimationTimer(0.f),
       mIsWalkFrame1(true),
       mTurnTimer(0.f),
-      mVisionDistance(250.f),
-      mVisionAngle(30.f)
+      mVisionDistance(350.f),
+      mVisionAngle(30.f),
+      mShootTimer(0.f),
+      mShootCooldown(0.f),
+      mLostSightTimer(0.f),
+      mChasingSoundPlayed(false)
 {
+    // Cargar Audio
+    if (mBufferChasing.loadFromFile(std::string(Config::ASSET_PATH) + "audio/chasing.wav")) {
+        mSoundChasing.setBuffer(mBufferChasing);
+        mSoundChasing.setLoop(false); // Solo una vez al detectar
+    }
+    if (mBufferGunshot.loadFromFile(std::string(Config::ASSET_PATH) + "audio/gunshot.wav")) {
+        mSoundGunshot.setBuffer(mBufferGunshot);
+    }
+
     // Configurar sprite inicial
     if (mTextureWalk1) {
         mSprite.setTexture(*mTextureWalk1);
@@ -36,8 +50,8 @@ Enemy::Enemy(sf::Texture* textureWalk1, sf::Texture* textureWalk2, sf::Texture* 
     
     // Configurar el cono de visión (triángulo)
     mVisionCone.setPointCount(3);
-    mVisionCone.setFillColor(sf::Color(255, 255, 0, 60)); // Amarillo semitransparente
-    mVisionCone.setOutlineColor(sf::Color(255, 200, 0, 100));
+    mVisionCone.setFillColor(sf::Color(0, 0, 255, 60)); // Azul semitransparente (Patrulla)
+    mVisionCone.setOutlineColor(sf::Color(0, 0, 200, 100));
     mVisionCone.setOutlineThickness(1.f);
     
     updateVisionCone();
@@ -61,10 +75,26 @@ void Enemy::updateOrigin() {
     mSprite.setOrigin(bounds.width / 2.f, bounds.height);
 }
 
-void Enemy::update(float dt) {
+void Enemy::update(float dt, Player& player) {
+    // Actualizar timers
+    if (mShootCooldown > 0.f) mShootCooldown -= dt;
+
+    // Máquina de Estados
     switch (mCurrentState) {
-        case EnemyState::WALKING:
+        case EnemyState::PATROLLING:
             {
+                // Detección
+                if (checkPlayerDetection(player)) {
+                    mCurrentState = EnemyState::CHASING;
+                    mVisionCone.setFillColor(sf::Color(255, 0, 0, 60)); // Rojo
+                    mSpeed = 300.f; // Correr
+                    if (!mChasingSoundPlayed) {
+                        mSoundChasing.play();
+                        mChasingSoundPlayed = true;
+                    }
+                    break;
+                }
+
                 // Mover en la dirección actual
                 float moveAmount = mSpeed * dt * (mMovingRight ? 1.f : -1.f);
                 mSprite.move(moveAmount, 0.f);
@@ -98,42 +128,104 @@ void Enemy::update(float dt) {
                     }
                 }
                 
-                // Actualizar animación de caminata
                 updateAnimation(dt);
             }
             break;
-            
+
         case EnemyState::TURNING:
+            mTurnTimer -= dt;
+            if (mTurnTimer <= 0.f) {
+                mMovingRight = !mMovingRight;
+                mCurrentState = EnemyState::PATROLLING;
+                
+                // Voltear sprite
+                float scale = std::abs(mSprite.getScale().x);
+                mSprite.setScale(mMovingRight ? scale : -scale, scale);
+            }
+            break;
+
+        case EnemyState::CHASING:
             {
-                mTurnTimer -= dt;
-                if (mTurnTimer <= 0.f) {
-                    // Cambiar dirección
-                    mMovingRight = !mMovingRight;
-                    mCurrentState = EnemyState::WALKING;
-                    
-                    // Voltear el sprite y restaurar textura de caminata
-                    if (mTextureWalk1) {
-                        mSprite.setTexture(*mTextureWalk1, true);
+                // Verificar si sigue viendo al jugador
+                bool canSee = checkPlayerDetection(player);
+                float distToPlayer = std::abs(player.getPosition().x - mSprite.getPosition().x);
+
+                if (!canSee) {
+                    mLostSightTimer += dt;
+                    if (mLostSightTimer > 2.0f) { // 2 segundos sin ver -> Volver a patrullar
+                        mCurrentState = EnemyState::PATROLLING;
+                        mVisionCone.setFillColor(sf::Color(0, 0, 255, 60)); // Azul
+                        mSpeed = 150.f; // Velocidad normal
+                        mChasingSoundPlayed = false;
+                        mLostSightTimer = 0.f;
                     }
-                    float scale = getTextureScale();
-                    // Nota: El sprite mira a la derecha por defecto, así que invertimos cuando va a la izquierda
-                    mSprite.setScale(mMovingRight ? scale : -scale, scale);
-                    updateOrigin();
+                } else {
+                    mLostSightTimer = 0.f;
+                    
+                    // Si está muy cerca, disparar
+                    if (distToPlayer < 300.f) { // Rango de disparo
+                        mCurrentState = EnemyState::SHOOTING;
+                        mShootTimer = 0.5f; // Tiempo de apuntado
+                        // Cambiar textura a disparo
+                        if (mTextureShoot) {
+                            mSprite.setTexture(*mTextureShoot, true);
+                            updateOrigin();
+                        }
+                        break;
+                    }
+                }
+
+                // Moverse hacia el jugador
+                float playerX = player.getPosition().x;
+                float myX = mSprite.getPosition().x;
+                
+                // Orientación
+                if (playerX > myX) mMovingRight = true;
+                else mMovingRight = false;
+                
+                float scale = std::abs(mSprite.getScale().x);
+                mSprite.setScale(mMovingRight ? scale : -scale, scale);
+
+                // Movimiento
+                float moveAmount = mSpeed * dt * (mMovingRight ? 1.f : -1.f);
+                mSprite.move(moveAmount, 0.f);
+                
+                updateAnimation(dt);
+            }
+            break;
+
+        case EnemyState::SHOOTING:
+            {
+                // Orientar hacia jugador
+                float playerX = player.getPosition().x;
+                float myX = mSprite.getPosition().x;
+                if (playerX > myX) mMovingRight = true;
+                else mMovingRight = false;
+                float scale = std::abs(mSprite.getScale().x);
+                mSprite.setScale(mMovingRight ? scale : -scale, scale);
+
+                mShootTimer -= dt;
+                if (mShootTimer <= 0.f) {
+                    // Disparar
+                    if (mShootCooldown <= 0.f) {
+                        player.takeDamage(1);
+                        mSoundGunshot.play();
+                        mShootCooldown = 1.5f;
+                    }
+                    
+                    // Volver a perseguir
+                    mCurrentState = EnemyState::CHASING;
+                    // Restaurar textura normal en el siguiente updateAnimation
                 }
             }
             break;
-            
-        case EnemyState::IDLE:
-            // No hacer nada por ahora
-            break;
     }
     
-    // Actualizar posición del cono de visión
     updateVisionCone();
 }
 
 void Enemy::updateAnimation(float dt) {
-    if (mCurrentState != EnemyState::WALKING) return;
+    if (mCurrentState != EnemyState::PATROLLING) return;
     
     mAnimationTimer += dt;
     if (mAnimationTimer >= 0.2f) { // Cambiar frame cada 0.2 segundos

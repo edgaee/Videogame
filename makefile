@@ -4,26 +4,38 @@ BIN_DIR := bin
 
 SFML := -lsfml-graphics -lsfml-window -lsfml-system -lsfml-audio -lbox2d
 
-# Obtener todos los archivos .cpp en el directorio de origen
-CPP_FILES := $(wildcard $(SRC_DIR)/*.cpp)
+# Archivos fuente del juego principal
+GAME_SRC := $(SRC_DIR)/main.cpp $(SRC_DIR)/Game.cpp $(SRC_DIR)/Player.cpp $(SRC_DIR)/Level.cpp $(SRC_DIR)/Platform.cpp $(SRC_DIR)/HidingSpot.cpp $(SRC_DIR)/Enemy.cpp $(SRC_DIR)/HUD.cpp
 
-# Generar los nombres de los archivos .exe en el directorio de destino
-EXE_FILES := $(patsubst $(SRC_DIR)/%.cpp,$(BIN_DIR)/%.exe,$(CPP_FILES))
+# Obtener todos los archivos .cpp para ejemplos (excluyendo los del juego)
+ALL_CPP := $(wildcard $(SRC_DIR)/*.cpp)
+EXAMPLE_FILES := $(filter-out $(GAME_SRC), $(ALL_CPP))
 
-# Regla para compilar cada archivo .cpp y generar el archivo .exe correspondiente
+# Generar los nombres de los archivos .exe para ejemplos
+EXAMPLE_EXES := $(patsubst $(SRC_DIR)/%.cpp,$(BIN_DIR)/%.exe,$(EXAMPLE_FILES))
+
+# Regla por defecto: compilar ejemplos y el juego
+all: examples game
+
+# Regla para ejemplos
+examples: $(EXAMPLE_EXES)
+
 $(BIN_DIR)/%.exe: $(SRC_DIR)/%.cpp
 	g++ $< -o $@ $(SFML) -Iinclude
 
-# Regla por defecto para compilar todos los archivos .cpp
-all: $(EXE_FILES)
+# Regla para el juego
+game:
+	g++ $(GAME_SRC) -o $(BIN_DIR)/DexterGame.exe $(SFML) -Iinclude
 
-# Regla para ejecutar cada archivo .exe
+# Ejecutar juego
+run-game: game
+	./$(BIN_DIR)/DexterGame.exe
+
+# Regla para ejecutar ejemplos (run01_Imagen, etc)
 run%: $(BIN_DIR)/%.exe
 	./$<
 
-# Regla para limpiar los archivos generados
 clean:
-	rm -f $(EXE_FILES)
+	rm -f $(BIN_DIR)/*.exe
 
-.PHONY: all clean
-.PHONY: run-%
+.PHONY: all clean examples game run-game

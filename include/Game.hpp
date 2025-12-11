@@ -6,6 +6,7 @@
 #include "Platform.hpp"
 #include "HidingSpot.hpp"
 #include "Config.hpp"
+#include "HUD.hpp"
 #include <vector>
 
 /**
@@ -43,8 +44,14 @@ private:
     // Miembros privados
     sf::RenderWindow mWindow; // La ventana de SFML
     sf::View mWorldView;      // Cámara del juego
+    
+    // Fondo
+    sf::Texture mBgTexture;
+    sf::Sprite mBgSprite;
+
     Player mPlayer;           // Instancia del jugador (Dexter)
     Level mLevel;             // Nivel actual
+    HUD mHUD;                 // Interfaz de usuario
     
     // Debug
     sf::Font mDebugFont;

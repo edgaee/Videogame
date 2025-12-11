@@ -47,6 +47,11 @@ public:
     void setHidden(bool hidden);
     bool isHidden() const;
 
+    // Sistema de Salud
+    void takeDamage(int damage);
+    int getLives() const;
+    bool isDead() const;
+
 private:
     // Métodos internos
     void handleInput(float dt);
@@ -101,6 +106,11 @@ private:
     int mSyringeAttackFrame;
     PlayerState mPreviousStateBeforeAttack;
     bool mShouldDisableSyringeAfterAttack;
+
+    // Salud
+    int mLives;
+    float mInvulnerableTimer;
+    bool mIsInvulnerable;
 };
 
 

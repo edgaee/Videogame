@@ -20,7 +20,10 @@ Player::Player()
       mGroundY(Config::PLAYER_INITIAL_Y),
       mPreJumpTimer(0.f),
       mLandingTimer(0.f),
-      mFallingTimer(0.f)
+      mFallingTimer(0.f),
+      mLives(3),
+      mInvulnerableTimer(0.f),
+      mIsInvulnerable(false)
 {
     std::string path = Config::IMAGE_PATH;
 
@@ -69,6 +72,19 @@ Player::Player()
 
 void Player::update(sf::Time deltaTime) {
     float dt = deltaTime.asSeconds();
+
+    // Actualizar invulnerabilidad
+    if (mIsInvulnerable) {
+        mInvulnerableTimer -= dt;
+        if (mInvulnerableTimer <= 0.f) {
+            mIsInvulnerable = false;
+            mSprite.setColor(sf::Color::White); // Restaurar color
+        } else {
+            // Parpadeo
+            int blink = (int)(mInvulnerableTimer * 20) % 2;
+            mSprite.setColor(blink ? sf::Color(255, 255, 255, 100) : sf::Color::White);
+        }
+    }
 
     // Lógica de Ataque (Bloqueante)
     if (mIsInSyringeAttack) {
@@ -408,6 +424,23 @@ void Player::setHidden(bool hidden) {
         setState(PlayerState::IDLE);
     }
 }
+
+void Player::takeDamage(int damage) {
+    if (mIsInvulnerable || mCurrentState == PlayerState::HIDING) return;
+
+    mLives -= damage;
+    if (mLives < 0) mLives = 0;
+
+    // Activar invulnerabilidad
+    mIsInvulnerable = true;
+    mInvulnerableTimer = 1.0f; // 1 segundo
+
+    // Reproducir sonido de herido (pendiente de implementar Audio Manager o similar)
+    // Por ahora solo visual
+}
+
+int Player::getLives() const { return mLives; }
+bool Player::isDead() const { return mLives <= 0; }
 
 void Player::draw(sf::RenderWindow& window) { window.draw(mSprite); }
 
