@@ -25,11 +25,11 @@ Enemy::Enemy(sf::Texture* textureWalk1, sf::Texture* textureWalk2, sf::Texture* 
       mChasingSoundPlayed(false)
 {
     // Cargar Audio
-    if (mBufferChasing.loadFromFile(std::string(Config::ASSET_PATH) + "audio/chasing.wav")) {
+    if (mBufferChasing.loadFromFile(std::string(Config::SOUND_PATH) + "chasing.wav")) {
         mSoundChasing.setBuffer(mBufferChasing);
         mSoundChasing.setLoop(false); // Solo una vez al detectar
     }
-    if (mBufferGunshot.loadFromFile(std::string(Config::ASSET_PATH) + "audio/gunshot.wav")) {
+    if (mBufferGunshot.loadFromFile(std::string(Config::SOUND_PATH) + "gunshot.wav")) {
         mSoundGunshot.setBuffer(mBufferGunshot);
     }
 
@@ -60,8 +60,8 @@ Enemy::Enemy(sf::Texture* textureWalk1, sf::Texture* textureWalk2, sf::Texture* 
 float Enemy::getTextureScale() const {
     if (!mTextureWalk1) return 1.f;
     
-    // Altura objetivo para el enemigo (290px)
-    float targetHeight = 290.f;
+    // Altura objetivo para el enemigo (250px)
+    float targetHeight = 250.f;
     float currentHeight = static_cast<float>(mTextureWalk1->getSize().y);
     
     if (currentHeight <= 0) return 1.f;
