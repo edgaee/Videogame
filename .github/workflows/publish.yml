@@ -1,0 +1,27 @@
+name: Publish Game Release
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Create Release Package
+      run: |
+        mkdir -p release
+        cp -r bin release/
+        cp -r assets release/
+        zip -r game-release.zip release/
+    
+    - name: Create Release
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: v${{ github.run_number }}
+        files: game-release.zip
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

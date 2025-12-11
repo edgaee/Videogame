@@ -26,7 +26,8 @@ namespace Config {
 
     // === ASSETS === 
     constexpr const char* ASSET_PATH = "./assets/";
-    constexpr const char* IMAGE_PATH = "./assets/images/";
+    constexpr const char* IMAGE_PATH = "./assets/textures/";
+    constexpr const char* SOUND_PATH = "./assets/sounds/";
     constexpr const char* FONT_PATH = "./assets/fonts/";
 
     // === COLORES ===

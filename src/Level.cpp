@@ -47,10 +47,17 @@ void Level::loadLevel1() {
     
     // --- ENEMIGOS ---
     // Doakes patrullando el pasillo principal
+<<<<<<< HEAD
     // Ajuste de altura: El suelo está en Y=1000.f. 
     // 1000.f levita, 1150.f se hunde. Probamos un valor intermedio.
     mEnemies.emplace_back(&mTexEnemyWalk1, &mTexEnemyWalk2, &mTexEnemyIdle, &mTexEnemyShoot,
                           sf::Vector2f(1800.f, 1075.f), 1500.f, 2200.f);
+=======
+    // Añadimos offset de 50 para que los pies toquen el suelo (ajustado al nuevo tamaño)
+    float enemyYOffset = 50.f;
+    mEnemies.emplace_back(&mTexEnemyWalk1, &mTexEnemyWalk2, &mTexEnemyIdle, &mTexEnemyShoot,
+                          sf::Vector2f(1800.f, groundY + enemyYOffset), 1500.f, 2200.f);
+>>>>>>> 265a686322fe5ae8dfdbcb75dd07986684231958
 }
 
 void Level::update(float dt, Player& player) {
