@@ -23,7 +23,12 @@ Player::Player()
       mFallingTimer(0.f),
       mLives(3),
       mInvulnerableTimer(0.f),
-      mIsInvulnerable(false)
+      mIsInvulnerable(false),
+      mDeathFrame(0),
+      mDeathTimer(0.f),
+      mDeathBlinkTimer(0.f),
+      mDeathAlpha(255.f),
+      mDeathAnimationComplete(false)
 {
     std::string path = Config::IMAGE_PATH;
 
@@ -64,7 +69,10 @@ Player::Player()
     // 5. Ataque
     if (!mTextureSyringeAttack.loadFromFile(path + "dexter_jeringa_ataque.png")) mTextureSyringeAttack = mTextureIdle;
     
-    // 6. Muerte
+    // 6. Muerte (secuencia de animación)
+    if (!mTextureDead1.loadFromFile(path + "dexter_muerto1.png")) mTextureDead1 = mTextureIdle;
+    if (!mTextureDead2.loadFromFile(path + "dexter_muerto2.png")) mTextureDead2 = mTextureIdle;
+    if (!mTextureDead3.loadFromFile(path + "dexter_muerto3.png")) mTextureDead3 = mTextureIdle;
     if (!mTextureDead.loadFromFile(path + "dexter_tirado.png")) mTextureDead = mTextureIdle;
 
     // Audio
@@ -81,10 +89,85 @@ Player::Player()
 void Player::update(sf::Time deltaTime) {
     float dt = deltaTime.asSeconds();
 
-    // Si está muerto, forzar estado DEAD y no actualizar nada más
+    // Si está muerto, manejar animación de muerte
     if (isDead()) {
         if (mCurrentState != PlayerState::DEAD) {
             setState(PlayerState::DEAD);
+            mDeathFrame = 0;
+            mDeathTimer = 0.f;
+            mDeathBlinkTimer = 0.f;
+            mDeathAlpha = 255.f;
+            mDeathAnimationComplete = false;
+            // Mostrar primer frame de muerte
+            mSprite.setTexture(mTextureDead1, true);
+            float scale = getTextureScale(&mTextureDead1);
+            mSprite.setScale(mFacingLeft ? -scale : scale, scale);
+            // Origen en centro-abajo
+            sf::FloatRect bounds = mSprite.getLocalBounds();
+            mSprite.setOrigin(bounds.width / 2.f, bounds.height);
+            // Posición: pies en el suelo (Y = 1000 es donde están los tiles)
+            mSprite.setPosition(mSprite.getPosition().x, 1000.f);
+        }
+        
+        // Animación de muerte
+        if (!mDeathAnimationComplete) {
+            mDeathTimer += dt;
+            
+            // Fase 1: Secuencia de frames (0.4s cada uno)
+            if (mDeathFrame < 4) {
+                if (mDeathTimer >= 0.4f) {
+                    mDeathTimer = 0.f;
+                    mDeathFrame++;
+                    
+                    sf::Texture* tex = nullptr;
+                    if (mDeathFrame == 1) {
+                        tex = &mTextureDead2;
+                    } else if (mDeathFrame == 2) {
+                        tex = &mTextureDead3;
+                    } else if (mDeathFrame == 3) {
+                        tex = &mTextureDead;
+                    } else if (mDeathFrame >= 4) {
+                        // Secuencia terminada, iniciar parpadeo
+                        mDeathTimer = 0.f;
+                        mDeathBlinkTimer = 0.f;
+                    }
+                    
+                    if (tex) {
+                        mSprite.setTexture(*tex, true);
+                        float scale = getTextureScale(tex);
+                        mSprite.setScale(mFacingLeft ? -scale : scale, scale);
+                        // Origen en centro-abajo
+                        sf::FloatRect bounds = mSprite.getLocalBounds();
+                        mSprite.setOrigin(bounds.width / 2.f, bounds.height);
+                        // Mantener pies en el suelo
+                        mSprite.setPosition(mSprite.getPosition().x, 1000.f);
+                    }
+                }
+            }
+            // Fase 2: Parpadeo durante 1.5 segundos
+            else if (mDeathTimer < 1.5f) {
+                mDeathBlinkTimer += dt;
+                if (mDeathBlinkTimer >= 0.2f) {  // Parpadeo más lento
+                    mDeathBlinkTimer = 0.f;
+                    sf::Color color = mSprite.getColor();
+                    if (color.a == 255) {
+                        mSprite.setColor(sf::Color(255, 255, 255, 0));
+                    } else {
+                        mSprite.setColor(sf::Color(255, 255, 255, 255));
+                    }
+                }
+            }
+            // Fase 3: Desvanecimiento durante 3 segundos
+            else if (mDeathTimer < 4.5f) {
+                mSprite.setColor(sf::Color(255, 255, 255, 255)); // Asegurar visible al iniciar
+                float fadeProgress = (mDeathTimer - 1.5f) / 3.0f;
+                mDeathAlpha = 255.f * (1.f - fadeProgress);
+                if (mDeathAlpha < 0.f) mDeathAlpha = 0.f;
+                mSprite.setColor(sf::Color(255, 255, 255, static_cast<sf::Uint8>(mDeathAlpha)));
+            }
+            else {
+                mDeathAnimationComplete = true;
+            }
         }
         return;
     }
@@ -464,6 +547,24 @@ void Player::takeDamage(int damage) {
 
 int Player::getLives() const { return mLives; }
 bool Player::isDead() const { return mLives <= 0; }
+
+bool Player::isAttacking() const { return mIsInSyringeAttack; }
+
+sf::FloatRect Player::getAttackBounds() const {
+    if (!mIsInSyringeAttack) return sf::FloatRect();
+    
+    // El área de ataque está frente al jugador
+    sf::FloatRect playerBounds = getBounds();
+    float attackWidth = 60.f;
+    float attackHeight = playerBounds.height * 0.5f;
+    
+    float attackX = mFacingLeft ? 
+        playerBounds.left - attackWidth : 
+        playerBounds.left + playerBounds.width;
+    float attackY = playerBounds.top + playerBounds.height * 0.25f;
+    
+    return sf::FloatRect(attackX, attackY, attackWidth, attackHeight);
+}
 
 void Player::draw(sf::RenderWindow& window) { window.draw(mSprite); }
 

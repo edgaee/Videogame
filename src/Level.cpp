@@ -2,6 +2,7 @@
 #include "Config.hpp"
 #include <iostream>
 #include <algorithm>
+#include <cmath>
 
 Level::Level() {
     // Cargar texturas individuales
@@ -18,12 +19,16 @@ Level::Level() {
     if (!mTexEnemyWalk2.loadFromFile(path + "policia1_caminando2.png")) std::cerr << "Error enemy w2" << std::endl;
     if (!mTexEnemyIdle.loadFromFile(path + "policia1_default.png")) std::cerr << "Error enemy idle" << std::endl;
     if (!mTexEnemyShoot.loadFromFile(path + "policia1_arma2.png")) std::cerr << "Error enemy shoot" << std::endl;
+    
+    // Bala
+    if (!mTexBullet.loadFromFile(path + "bala.png")) std::cerr << "Error bullet" << std::endl;
 }
 
 void Level::loadLevel1() {
     mPlatforms.clear();
     mHidingSpots.clear();
     mEnemies.clear();
+    mBullets.clear();
 
     // --- DISEÑO NIVEL 1: MIAMI METRO POLICE ---
     
@@ -54,9 +59,95 @@ void Level::loadLevel1() {
 }
 
 void Level::update(float dt, Player& player) {
+    // Obtener hitbox del ataque del jugador
+    sf::FloatRect attackBounds;
+    bool playerAttacking = player.isAttacking();
+    if (playerAttacking) {
+        attackBounds = player.getAttackBounds();
+    }
+    
     // Actualizar enemigos
-    for (auto& enemy : mEnemies) {
-        enemy.update(dt, player);
+    for (auto it = mEnemies.begin(); it != mEnemies.end(); ) {
+        // Verificar si el ataque del jugador golpea al enemigo
+        if (playerAttacking && !it->isDying() && !it->isDead()) {
+            sf::FloatRect enemyBounds = it->getBounds();
+            if (attackBounds.intersects(enemyBounds)) {
+                it->kill();
+            }
+        }
+        
+        it->update(dt, player);
+        
+        // Verificar si el enemigo quiere disparar
+        if (it->wantsToShoot() && !player.isDead()) {
+            it->confirmShot();
+            
+            // Crear bala
+            Bullet bullet;
+            bullet.sprite.setTexture(mTexBullet);
+            
+            // Posición inicial: pistola del enemigo
+            sf::Vector2f gunPos = it->getGunPosition();
+            bullet.sprite.setPosition(gunPos);
+            
+            // Escalar la bala
+            bullet.sprite.setScale(0.5f, 0.5f);
+            
+            // Centrar origen
+            sf::FloatRect bulletBounds = bullet.sprite.getLocalBounds();
+            bullet.sprite.setOrigin(bulletBounds.width / 2.f, bulletBounds.height / 2.f);
+            
+            // Calcular destino (centro del jugador)
+            sf::FloatRect playerBounds = player.getBounds();
+            bullet.targetPos = sf::Vector2f(
+                playerBounds.left + playerBounds.width / 2.f,
+                playerBounds.top + playerBounds.height / 2.f
+            );
+            
+            // Calcular distancia y tiempo de viaje
+            float distance = std::sqrt(
+                std::pow(bullet.targetPos.x - gunPos.x, 2) +
+                std::pow(bullet.targetPos.y - gunPos.y, 2)
+            );
+            
+            // Velocidad de la bala (800 px/s)
+            float bulletSpeed = 800.f;
+            bullet.travelTime = distance / bulletSpeed;
+            bullet.elapsedTime = 0.f;
+            
+            // Calcular velocidad
+            bullet.velocity = sf::Vector2f(
+                (bullet.targetPos.x - gunPos.x) / bullet.travelTime,
+                (bullet.targetPos.y - gunPos.y) / bullet.travelTime
+            );
+            
+            bullet.active = true;
+            mBullets.push_back(bullet);
+        }
+        
+        // Eliminar enemigos cuya animación de muerte terminó
+        if (it->shouldRemove()) {
+            it = mEnemies.erase(it);
+        } else {
+            ++it;
+        }
+    }
+    
+    // Actualizar balas
+    for (auto it = mBullets.begin(); it != mBullets.end(); ) {
+        it->elapsedTime += dt;
+        it->sprite.move(it->velocity.x * dt, it->velocity.y * dt);
+        
+        // Verificar si la bala llegó al destino
+        if (it->elapsedTime >= it->travelTime) {
+            // Hacer daño al jugador si no está muerto ni escondido
+            if (!player.isDead() && !player.isHidden()) {
+                player.takeDamage(1);
+            }
+            it = mBullets.erase(it);
+        } else {
+            ++it;
+        }
     }
 }
 
@@ -74,6 +165,11 @@ void Level::draw(sf::RenderWindow& window) {
     // Dibujar Enemigos
     for (auto& enemy : mEnemies) {
         enemy.draw(window);
+    }
+    
+    // Dibujar Balas
+    for (auto& bullet : mBullets) {
+        window.draw(bullet.sprite);
     }
 }
 

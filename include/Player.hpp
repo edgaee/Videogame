@@ -48,6 +48,10 @@ public:
     // Establece si el jugador está escondido
     void setHidden(bool hidden);
     bool isHidden() const;
+    
+    // Sistema de ataque
+    bool isAttacking() const;
+    sf::FloatRect getAttackBounds() const;
 
     // Sistema de Salud
     void takeDamage(int damage);
@@ -82,7 +86,12 @@ private:
     
     // Texturas Ataque
     sf::Texture mTextureSyringeAttack; // Un solo frame de ataque
-    sf::Texture mTextureDead;          // Textura muerto
+    
+    // Texturas Muerte (secuencia)
+    sf::Texture mTextureDead1;         // dexter_muerto1.png
+    sf::Texture mTextureDead2;         // dexter_muerto2.png
+    sf::Texture mTextureDead3;         // dexter_muerto3.png
+    sf::Texture mTextureDead;          // dexter_tirado.png (final)
 
     // Audio
     sf::SoundBuffer mBufferPain;
@@ -118,6 +127,13 @@ private:
     int mLives;
     float mInvulnerableTimer;
     bool mIsInvulnerable;
+    
+    // Animación de muerte
+    int mDeathFrame;
+    float mDeathTimer;
+    float mDeathBlinkTimer;
+    float mDeathAlpha;
+    bool mDeathAnimationComplete;
 };
 
 

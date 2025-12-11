@@ -10,7 +10,9 @@ enum class EnemyState {
     PATROLLING, // Caminando (patrullando)
     CHASING,    // Persiguiendo al jugador
     SHOOTING,   // Disparando
-    TURNING     // Girando (momento de pausa antes de cambiar dirección)
+    TURNING,    // Girando (momento de pausa antes de cambiar dirección)
+    DYING,      // Muriendo (parpadeo)
+    DEAD        // Muerto (desvaneciendose)
 };
 
 class Enemy {
@@ -42,6 +44,22 @@ public:
     
     // Obtiene los límites del sprite
     sf::FloatRect getBounds() const;
+    
+    // Mata al enemigo (inicia animación de muerte)
+    void kill();
+    
+    // Verifica si el enemigo está muerto o muriendo
+    bool isDead() const;
+    bool isDying() const;
+    
+    // Verifica si el enemigo debe ser eliminado del juego
+    bool shouldRemove() const;
+    
+    // Sistema de disparo
+    bool wantsToShoot() const;       // Devuelve true si quiere disparar
+    void confirmShot();              // Confirma que se disparó la bala
+    sf::Vector2f getGunPosition() const;  // Posición de la pistola
+    bool isFacingRight() const;      // Dirección que mira
 
 private:
     // Métodos internos
@@ -58,6 +76,9 @@ private:
     sf::Texture* mTextureWalk2;
     sf::Texture* mTextureIdle;
     sf::Texture* mTextureShoot;
+    sf::Texture mTextureDeath1;  // Primer frame de muerte
+    sf::Texture mTextureDeath2;  // Segundo frame de muerte
+    sf::Texture mTextureDead;    // Frame final (muerto)
 
     // Audio
     sf::SoundBuffer mBufferChasing;
@@ -65,6 +86,12 @@ private:
     sf::SoundBuffer mBufferGunshot;
     sf::Sound mSoundGunshot;
     bool mChasingSoundPlayed;
+    
+    // Animación de muerte
+    float mDeathTimer;
+    float mDeathBlinkTimer;
+    float mDeathAlpha;
+    int mDeathFrame;  // Frame actual de la animación de muerte (0, 1, 2)
     
     // Patrullaje
     float mPatrolStart;
@@ -86,4 +113,5 @@ private:
     float mShootTimer;
     float mShootCooldown;
     float mLostSightTimer; // Tiempo sin ver al jugador antes de volver a patrullar
+    bool mWantsToShoot;    // Flag para indicar que quiere disparar
 };

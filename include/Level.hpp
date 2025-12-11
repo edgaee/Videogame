@@ -6,6 +6,18 @@
 #include "Player.hpp"
 #include "Enemy.hpp"
 
+// Estructura para representar una bala
+struct Bullet {
+    sf::Sprite sprite;
+    sf::Vector2f velocity;
+    sf::Vector2f targetPos;  // Posición objetivo (jugador)
+    float travelTime;        // Tiempo total de viaje
+    float elapsedTime;       // Tiempo transcurrido
+    bool active;
+    
+    Bullet() : travelTime(0.f), elapsedTime(0.f), active(true) {}
+};
+
 class Level {
 public:
     Level();
@@ -41,4 +53,8 @@ private:
     sf::Texture mTexEnemyShoot;
     std::vector<Enemy> mEnemies;
     bool mPlayerDetected;
+    
+    // Sistema de balas
+    sf::Texture mTexBullet;
+    std::vector<Bullet> mBullets;
 };

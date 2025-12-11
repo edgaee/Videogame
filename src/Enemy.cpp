@@ -22,8 +22,18 @@ Enemy::Enemy(sf::Texture* textureWalk1, sf::Texture* textureWalk2, sf::Texture* 
       mShootTimer(0.f),
       mShootCooldown(0.f),
       mLostSightTimer(0.f),
-      mChasingSoundPlayed(false)
+      mChasingSoundPlayed(false),
+      mDeathTimer(0.f),
+      mDeathBlinkTimer(0.f),
+      mDeathAlpha(255.f),
+      mDeathFrame(0),
+      mWantsToShoot(false)
 {
+    // Cargar texturas de animación de muerte
+    mTextureDeath1.loadFromFile(std::string(Config::IMAGE_PATH) + "policia1_muerte1.png");
+    mTextureDeath2.loadFromFile(std::string(Config::IMAGE_PATH) + "policia1_muerte2.png");
+    mTextureDead.loadFromFile(std::string(Config::IMAGE_PATH) + "policia1_muerto.png");
+    
     // Cargar Audio
     if (mBufferChasing.loadFromFile(std::string(Config::SOUND_PATH) + "chasing.wav")) {
         mSoundChasing.setBuffer(mBufferChasing);
@@ -212,9 +222,9 @@ void Enemy::update(float dt, Player& player) {
 
                 mShootTimer -= dt;
                 if (mShootTimer <= 0.f) {
-                    // Disparar
+                    // Indicar que quiere disparar (Level creará la bala)
                     if (mShootCooldown <= 0.f) {
-                        player.takeDamage(1);
+                        mWantsToShoot = true;
                         mSoundGunshot.play();
                         mShootCooldown = 1.5f;
                     }
@@ -223,6 +233,76 @@ void Enemy::update(float dt, Player& player) {
                     mCurrentState = EnemyState::CHASING;
                     // Restaurar textura normal en el siguiente updateAnimation
                 }
+            }
+            break;
+
+        case EnemyState::DYING:
+            {
+                mDeathTimer += dt;
+                
+                // Fase 1: Animación de muerte (frames secuenciales)
+                if (mDeathFrame < 3) {
+                    // Cambiar frame cada 0.4 segundos
+                    if (mDeathTimer >= 0.4f) {
+                        mDeathTimer = 0.f;
+                        mDeathFrame++;
+                        
+                        float scale = getTextureScale();
+                        if (mDeathFrame == 1) {
+                            mSprite.setTexture(mTextureDeath2, true);
+                            mSprite.setScale(mMovingRight ? scale : -scale, scale);
+                            updateOrigin();
+                        } else if (mDeathFrame == 2) {
+                            // Textura final de muerto (acostado)
+                            mSprite.setTexture(mTextureDead, true);
+                            // Escala proporcional para la textura acostada
+                            float deadScale = scale * 0.8f;  // Ajustar tamaño
+                            mSprite.setScale(mMovingRight ? deadScale : -deadScale, deadScale);
+                            // Origen especial: centro-abajo pero ajustado para imagen horizontal
+                            sf::FloatRect bounds = mSprite.getLocalBounds();
+                            mSprite.setOrigin(bounds.width / 2.f, bounds.height);
+                            // Ajustar posición para que quede al nivel del suelo (sin mover)
+                        } else if (mDeathFrame >= 3) {
+                            // Animación terminada, iniciar parpadeo
+                            mDeathTimer = 0.f;
+                            mDeathBlinkTimer = 0.f;
+                        }
+                    }
+                }
+                // Fase 2: Parpadeo durante 1.5 segundos
+                else {
+                    mDeathBlinkTimer += dt;
+                    
+                    // Parpadear cada 0.2 segundos (más lento)
+                    if (mDeathBlinkTimer >= 0.2f) {
+                        mDeathBlinkTimer = 0.f;
+                        sf::Color color = mSprite.getColor();
+                        if (color.a == 255) {
+                            mSprite.setColor(sf::Color(255, 255, 255, 0));
+                        } else {
+                            mSprite.setColor(sf::Color(255, 255, 255, 255));
+                        }
+                    }
+                    
+                    // Después de 1.5 segundos de parpadeo, pasar a DEAD
+                    if (mDeathTimer >= 1.5f) {
+                        mCurrentState = EnemyState::DEAD;
+                        mDeathTimer = 0.f;
+                        mDeathAlpha = 255.f;
+                        mSprite.setColor(sf::Color(255, 255, 255, 255));
+                    }
+                }
+            }
+            break;
+
+        case EnemyState::DEAD:
+            {
+                // Desvanecimiento durante 4 segundos
+                mDeathTimer += dt;
+                mDeathAlpha = 255.f * (1.f - mDeathTimer / 4.0f);
+                if (mDeathAlpha < 0.f) mDeathAlpha = 0.f;
+                
+                mSprite.setColor(sf::Color(255, 255, 255, static_cast<sf::Uint8>(mDeathAlpha)));
             }
             break;
     }
@@ -341,4 +421,69 @@ sf::Vector2f Enemy::getPosition() const {
 
 sf::FloatRect Enemy::getBounds() const {
     return mSprite.getGlobalBounds();
+}
+
+void Enemy::kill() {
+    if (mCurrentState == EnemyState::DYING || mCurrentState == EnemyState::DEAD) {
+        return; // Ya está muriendo o muerto
+    }
+    
+    // Cambiar a estado de muerte
+    mCurrentState = EnemyState::DYING;
+    mDeathTimer = 0.f;
+    mDeathBlinkTimer = 0.f;
+    mDeathFrame = 0;  // Empezar desde el primer frame
+    
+    // Cambiar textura al primer frame de muerte
+    mSprite.setTexture(mTextureDeath1, true);
+    float scale = getTextureScale();
+    mSprite.setScale(mMovingRight ? scale : -scale, scale);
+    updateOrigin();
+    
+    // Detener sonidos
+    mSoundChasing.stop();
+    
+    // Ocultar cono de visión
+    mVisionCone.setFillColor(sf::Color::Transparent);
+    mVisionCone.setOutlineColor(sf::Color::Transparent);
+}
+
+bool Enemy::isDead() const {
+    return mCurrentState == EnemyState::DEAD;
+}
+
+bool Enemy::isDying() const {
+    return mCurrentState == EnemyState::DYING;
+}
+
+bool Enemy::shouldRemove() const {
+    // Remover cuando el desvanecimiento termine (alpha = 0)
+    return mCurrentState == EnemyState::DEAD && mDeathAlpha <= 0.f;
+}
+
+bool Enemy::wantsToShoot() const {
+    return mWantsToShoot;
+}
+
+void Enemy::confirmShot() {
+    mWantsToShoot = false;
+}
+
+sf::Vector2f Enemy::getGunPosition() const {
+    // Posición de la pistola (frente del enemigo, a la altura del pecho)
+    sf::Vector2f pos = mSprite.getPosition();
+    sf::FloatRect bounds = mSprite.getLocalBounds();
+    float scale = std::abs(mSprite.getScale().x);
+    float spriteWidth = bounds.width * scale;
+    float spriteHeight = bounds.height * scale;
+    
+    // La pistola está aproximadamente a 70% de altura y al frente
+    float gunY = pos.y - spriteHeight * 0.5f;
+    float gunX = mMovingRight ? pos.x + spriteWidth * 0.4f : pos.x - spriteWidth * 0.4f;
+    
+    return sf::Vector2f(gunX, gunY);
+}
+
+bool Enemy::isFacingRight() const {
+    return mMovingRight;
 }
