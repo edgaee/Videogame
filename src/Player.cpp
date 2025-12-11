@@ -105,8 +105,8 @@ void Player::update(sf::Time deltaTime) {
             // Origen en centro-abajo
             sf::FloatRect bounds = mSprite.getLocalBounds();
             mSprite.setOrigin(bounds.width / 2.f, bounds.height);
-            // Posición: pies en el suelo (Y = 1000 es donde están los tiles)
-            mSprite.setPosition(mSprite.getPosition().x, 1000.f);
+            // Posición: pies en el suelo (ajustado más abajo)
+            mSprite.setPosition(mSprite.getPosition().x, 1020.f);
         }
         
         // Animación de muerte
@@ -139,8 +139,8 @@ void Player::update(sf::Time deltaTime) {
                         // Origen en centro-abajo
                         sf::FloatRect bounds = mSprite.getLocalBounds();
                         mSprite.setOrigin(bounds.width / 2.f, bounds.height);
-                        // Mantener pies en el suelo
-                        mSprite.setPosition(mSprite.getPosition().x, 1000.f);
+                        // Mantener pies en el suelo (ajustado más abajo)
+                        mSprite.setPosition(mSprite.getPosition().x, 1020.f);
                     }
                 }
             }

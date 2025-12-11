@@ -470,16 +470,16 @@ void Enemy::confirmShot() {
 }
 
 sf::Vector2f Enemy::getGunPosition() const {
-    // Posición de la pistola (frente del enemigo, a la altura del pecho)
+    // Posición de la pistola (frente del enemigo, cerca de la cabeza)
     sf::Vector2f pos = mSprite.getPosition();
     sf::FloatRect bounds = mSprite.getLocalBounds();
     float scale = std::abs(mSprite.getScale().x);
     float spriteWidth = bounds.width * scale;
     float spriteHeight = bounds.height * scale;
     
-    // La pistola está aproximadamente a 70% de altura y al frente
-    float gunY = pos.y - spriteHeight * 0.5f;
-    float gunX = mMovingRight ? pos.x + spriteWidth * 0.4f : pos.x - spriteWidth * 0.4f;
+    // La pistola está aproximadamente a 80% de altura y al frente extremo
+    float gunY = pos.y - spriteHeight * 0.80f;
+    float gunX = mMovingRight ? pos.x + spriteWidth * 0.5f : pos.x - spriteWidth * 0.5f;
     
     return sf::Vector2f(gunX, gunY);
 }

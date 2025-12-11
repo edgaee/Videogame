@@ -90,25 +90,20 @@ void Level::update(float dt, Player& player) {
             sf::Vector2f gunPos = it->getGunPosition();
             bullet.sprite.setPosition(gunPos);
             
-            // Escalar la bala
-            bullet.sprite.setScale(0.5f, 0.5f);
+            // Escalar la bala (muy pequeña)
+            bullet.sprite.setScale(0.08f, 0.08f);
             
             // Centrar origen
             sf::FloatRect bulletBounds = bullet.sprite.getLocalBounds();
             bullet.sprite.setOrigin(bulletBounds.width / 2.f, bulletBounds.height / 2.f);
             
-            // Calcular destino (centro del jugador)
+            // Calcular destino (misma altura, hacia el jugador en línea recta)
             sf::FloatRect playerBounds = player.getBounds();
-            bullet.targetPos = sf::Vector2f(
-                playerBounds.left + playerBounds.width / 2.f,
-                playerBounds.top + playerBounds.height / 2.f
-            );
+            float playerCenterX = playerBounds.left + playerBounds.width / 2.f;
+            bullet.targetPos = sf::Vector2f(playerCenterX, gunPos.y);  // Misma altura Y
             
-            // Calcular distancia y tiempo de viaje
-            float distance = std::sqrt(
-                std::pow(bullet.targetPos.x - gunPos.x, 2) +
-                std::pow(bullet.targetPos.y - gunPos.y, 2)
-            );
+            // Calcular distancia horizontal y tiempo de viaje
+            float distance = std::abs(bullet.targetPos.x - gunPos.x);
             
             // Velocidad de la bala (800 px/s)
             float bulletSpeed = 800.f;
@@ -120,6 +115,13 @@ void Level::update(float dt, Player& player) {
                 (bullet.targetPos.x - gunPos.x) / bullet.travelTime,
                 (bullet.targetPos.y - gunPos.y) / bullet.travelTime
             );
+            
+            // Rotar la bala para que apunte hacia el jugador
+            float angle = std::atan2(
+                bullet.targetPos.y - gunPos.y,
+                bullet.targetPos.x - gunPos.x
+            ) * 180.f / 3.14159f;
+            bullet.sprite.setRotation(angle);
             
             bullet.active = true;
             mBullets.push_back(bullet);
