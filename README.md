@@ -9,7 +9,7 @@ Como se mencionó anteriormente, el juego es estilo side-scroller, el usuario ne
 🕹️ Controles
 
 Flechas del teclado: Movimiento
-Q: Sacar jering
+Q: Sacar jeringa
 C: Atacar
 E: Interactuar con los lugares de escondite
 
