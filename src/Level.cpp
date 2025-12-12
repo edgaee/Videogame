@@ -401,6 +401,21 @@ int Level::getCollectedCount() const {
     return mCollectedCount;
 }
 
+bool Level::isBossDefeated() const {
+    // Buscar si el boss (Doakes) está vivo
+    for (const auto& enemy : mEnemies) {
+        if (enemy.getType() == EnemyType::BOSS) {
+            // Encontramos al boss, verificar si está muerto o muriendo
+            bool defeated = enemy.isDead() || enemy.isDying();
+            std::cout << "Boss encontrado - isDead: " << enemy.isDead() << ", isDying: " << enemy.isDying() << ", Derrotado: " << defeated << std::endl;
+            return defeated;
+        }
+    }
+    // Si no encontramos al boss en la lista, significa que fue derrotado
+    std::cout << "Boss no encontrado en lista - Asumiendo derrotado" << std::endl;
+    return true;
+}
+
 void Level::checkCollisions(Player& player, float dt) {
     sf::Vector2f velocity = player.getVelocity();
     

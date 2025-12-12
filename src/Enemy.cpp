@@ -80,8 +80,8 @@ float Enemy::getTextureScale() const {
     if (!mTextures.walk1) return 1.f;
     
     // Altura objetivo para el enemigo
-    // Policías: 230px, Doakes: 240px para escala consistente
-    float targetHeight = (mType == EnemyType::BOSS) ? 240.f : 230.f;
+    // Policías: 230px, Doakes: 200px para escala consistente (igual que Dexter)
+    float targetHeight = (mType == EnemyType::BOSS) ? 200.f : 230.f;
     float currentHeight = static_cast<float>(mTextures.walk1->getSize().y);
     
     if (currentHeight <= 0) return 1.f;
@@ -100,8 +100,8 @@ float Enemy::getTextureScaleFor(const sf::Texture* texture) const {
     if (mType == EnemyType::BOSS) {
         // Verificar si es la textura de muerto (horizontal, altura pequeña)
         if (texture == mTextures.dead) {
-            // Escala especial para textura de muerto de Doakes (más pequeña)
-            return getTextureScale() * 0.5f;
+            // Escala especial para textura de muerto de Doakes (pegado al piso)
+            return getTextureScale() * 1.0f;
         }
         // Para todas las demás texturas de Doakes, usar escala base
         return getTextureScale();
@@ -602,4 +602,8 @@ void Enemy::takeDamage(int damage) {
 
 int Enemy::getHealth() const {
     return mHealth;
+}
+
+EnemyType Enemy::getType() const {
+    return mType;
 }

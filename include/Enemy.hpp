@@ -88,6 +88,7 @@ public:
     // Sistema de salud (para boss)
     void takeDamage(int damage = 1);
     int getHealth() const;
+    EnemyType getType() const;
 
 private:
     // Métodos internos

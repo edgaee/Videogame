@@ -579,9 +579,9 @@ bool Player::isAttacking() const { return mIsInSyringeAttack; }
 sf::FloatRect Player::getAttackBounds() const {
     if (!mIsInSyringeAttack) return sf::FloatRect();
     
-    // El área de ataque está frente al jugador
+    // El área de ataque está frente al jugador (muy reducido para combate cercano)
     sf::FloatRect playerBounds = getBounds();
-    float attackWidth = 60.f;
+    float attackWidth = 15.f;  // Reducido a 15px para requerir estar muy cerca
     float attackHeight = playerBounds.height * 0.5f;
     
     float attackX = mFacingLeft ? 

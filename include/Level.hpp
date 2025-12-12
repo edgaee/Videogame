@@ -47,6 +47,7 @@ public:
     const std::vector<HidingSpot>& getHidingSpots() const;
     bool isPlayerDetected() const;
     int getCollectedCount() const;
+    bool isBossDefeated() const;
 
 private:
     sf::Texture mTexFloor;

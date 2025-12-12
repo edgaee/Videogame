@@ -79,4 +79,11 @@ private:
     float mGameOverTimer; // Timer para retrasar la pantalla de Game Over
     sf::Text mGameOverText;
     sf::Text mRestartText;
+    
+    // Pantalla de Victoria
+    bool mIsVictory;
+    float mVictoryTimer; // Timer para retrasar la pantalla de Victoria
+    bool mBossDefeatedPending; // Flag para saber si el boss fue derrotado pero aún no mostramos victoria
+    sf::Text mVictoryText;
+    sf::Text mVictoryStatsText;
 };
