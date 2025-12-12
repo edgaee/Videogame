@@ -22,6 +22,7 @@ Eliminar a Doakes (Boss final).
 👥 Equipo
 
 Lider: Edgar Alejandro Rodríguez Sáenz (@edgaee)
+
 Integrante: Héctor Hugo Bermúdez Zepeda (@HUGOBOT17)
 
 🛠️ Tecnologías
@@ -31,4 +32,5 @@ Lenguaje: C++
 📜 Créditos
 
 El juego está inspirado en las mecánicas del juego "Gunpoint"
+
 Además de la ya mencionada temática de la serie de Dexter.
