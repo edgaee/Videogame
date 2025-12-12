@@ -1,4 +1,4 @@
-🩸💉 Dexter: The Dark Passenger
+🩸💉 The Dark Passenger
 
 El proyecto es un videojuego estilo side-scroller 2D inspirado en la serie "Dexter", donde nuestro protagonista es el mismo Dexter Morgan.
 
