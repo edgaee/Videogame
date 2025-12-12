@@ -9,14 +9,19 @@ Como se mencionó anteriormente, el juego es estilo side-scroller, el usuario ne
 🕹️ Controles
 
 Flechas del teclado: Movimiento
+
 Q: Sacar jeringa
+
 C: Atacar
+
 E: Interactuar con los lugares de escondite
 
 ⚙️ Mecánicas
 
 Conseguir todas las blood slides en el mapa.
+
 Derrotar a todos los enemigos.
+
 Eliminar a Doakes (Boss final).
 
 👥 Equipo
