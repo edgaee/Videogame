@@ -30,6 +30,8 @@ Level::Level() : mPlayerDetected(false), mCollectedCount(0) {
     if (!mTexPolice2_Walk2.loadFromFile(path + "policia2_caminando2.png")) std::cerr << "Error p2 w2" << std::endl;
     if (!mTexPolice2_Aim.loadFromFile(path + "policia2_arma1.png")) std::cerr << "Error p2 aim" << std::endl;
     if (!mTexPolice2_Shoot.loadFromFile(path + "policia2_arma2.png")) std::cerr << "Error p2 shoot" << std::endl;
+    if (!mTexPolice2_Death1.loadFromFile(path + "policia2_muerto1.png")) std::cerr << "Error p2 d1" << std::endl;
+    if (!mTexPolice2_Death2.loadFromFile(path + "Policia2_muerto2.png")) std::cerr << "Error p2 d2" << std::endl;
     if (!mTexPolice2_Dead.loadFromFile(path + "policia2_muerto.png")) std::cerr << "Error p2 dead" << std::endl;
     
     // === DOAKES (BOSS) ===
@@ -199,8 +201,8 @@ void Level::loadLevel1() {
     police2Tex.walk2 = &mTexPolice2_Walk2;
     police2Tex.aim = &mTexPolice2_Aim;
     police2Tex.shoot = &mTexPolice2_Shoot;
-    police2Tex.death1 = nullptr; // Policía 2 no tiene animación de muerte
-    police2Tex.death2 = nullptr;
+    police2Tex.death1 = &mTexPolice2_Death1;
+    police2Tex.death2 = &mTexPolice2_Death2;
     police2Tex.dead = &mTexPolice2_Dead;
     
     // Configurar texturas para Doakes (Boss)
@@ -217,23 +219,23 @@ void Level::loadLevel1() {
     // Crear enemigos en posiciones específicas (distribuidos en mapa largo)
     // x=1200: Policía 1 (Patrullando 1000-1400)
     mEnemies.emplace_back(police1Tex, EnemyType::POLICE1, 
-                          sf::Vector2f(1200.f, 980.f), 1000.f, 1400.f);
+                          sf::Vector2f(1200.f, 1060.f), 1000.f, 1400.f);
     
     // x=2000: Policía 2 (Patrullando 1800-2200)
     mEnemies.emplace_back(police2Tex, EnemyType::POLICE2, 
-                          sf::Vector2f(2000.f, 980.f), 1800.f, 2200.f);
+                          sf::Vector2f(2000.f, 1060.f), 1800.f, 2200.f);
     
     // x=2900: Policía 1 segunda instancia (Patrullando 2700-3100)
     mEnemies.emplace_back(police1Tex, EnemyType::POLICE1, 
-                          sf::Vector2f(2900.f, 980.f), 2700.f, 3100.f);
+                          sf::Vector2f(2900.f, 1060.f), 2700.f, 3100.f);
     
     // x=3800: Policía 2 segunda instancia (Patrullando 3600-4000)
     mEnemies.emplace_back(police2Tex, EnemyType::POLICE2, 
-                          sf::Vector2f(3800.f, 980.f), 3600.f, 4000.f);
+                          sf::Vector2f(3800.f, 1060.f), 3600.f, 4000.f);
     
     // x=5200: DOAKES (BOSS) - Patrullando zona final (5000-5400)
     mEnemies.emplace_back(doakesTex, EnemyType::BOSS, 
-                          sf::Vector2f(5200.f, 980.f), 5000.f, 5400.f);
+                          sf::Vector2f(5200.f, 1040.f), 5000.f, 5400.f);
 }
 
 void Level::update(float dt, Player& player) {

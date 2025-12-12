@@ -95,6 +95,7 @@ private:
     void updateVisionCone();
     void updateOrigin();
     float getTextureScale() const;
+    float getTextureScaleFor(const sf::Texture* texture) const;
 
     sf::Sprite mSprite;
     sf::ConvexShape mVisionCone;

@@ -80,9 +80,69 @@ float Enemy::getTextureScale() const {
     if (!mTextures.walk1) return 1.f;
     
     // Altura objetivo para el enemigo
-    // Aumentada a 200px para que se vean más grandes y proporcionales
-    float targetHeight = 200.f;
+    // Policías: 230px, Doakes: 240px para escala consistente
+    float targetHeight = (mType == EnemyType::BOSS) ? 240.f : 230.f;
     float currentHeight = static_cast<float>(mTextures.walk1->getSize().y);
+    
+    if (currentHeight <= 0) return 1.f;
+    
+    return targetHeight / currentHeight;
+}
+
+// Calcula la escala para una textura específica
+// Para BOSS (Doakes) usa siempre la escala base para evitar parpadeo
+// Para otros enemigos, escala cada textura individualmente
+float Enemy::getTextureScaleFor(const sf::Texture* texture) const {
+    if (!texture) return getTextureScale();
+    
+    // Para Doakes (BOSS), usar siempre la misma escala base para evitar parpadeo
+    // excepto para la textura de muerto que es horizontal
+    if (mType == EnemyType::BOSS) {
+        // Verificar si es la textura de muerto (horizontal, altura pequeña)
+        if (texture == mTextures.dead) {
+            // Escala especial para textura de muerto de Doakes (más pequeña)
+            return getTextureScale() * 0.5f;
+        }
+        // Para todas las demás texturas de Doakes, usar escala base
+        return getTextureScale();
+    }
+    
+    // Para policías: escala especial para death2 (igual que death1)
+    if (texture == mTextures.death2 && mTextures.death1) {
+        // Usar la misma escala que death1 para que sean idénticas
+        float targetHeight = 200.f;
+        float death1Height = static_cast<float>(mTextures.death1->getSize().y);
+        if (death1Height <= 0) return 1.f;
+        return targetHeight / death1Height;
+    }
+    
+    // Para policías: death1 tamaño reducido
+    if (texture == mTextures.death1) {
+        float targetHeight = 200.f;
+        float currentHeight = static_cast<float>(texture->getSize().y);
+        if (currentHeight <= 0) return 1.f;
+        return targetHeight / currentHeight;
+    }
+    
+    // Para policías: dead (acostado) escala proporcional
+    if (texture == mTextures.dead && mTextures.walk1) {
+        float targetHeight = 230.f;
+        float walk1Height = static_cast<float>(mTextures.walk1->getSize().y);
+        if (walk1Height <= 0) return 1.f;
+        return targetHeight / walk1Height;
+    }
+    
+    // Para policías: walk2 usa la misma escala que walk1
+    if (texture == mTextures.walk2 && mTextures.walk1) {
+        float targetHeight = 230.f;
+        float walk1Height = static_cast<float>(mTextures.walk1->getSize().y);
+        if (walk1Height <= 0) return 1.f;
+        return targetHeight / walk1Height;
+    }
+    
+    // Para policías normales, escalar cada textura a altura objetivo (230px)
+    float targetHeight = 230.f;
+    float currentHeight = static_cast<float>(texture->getSize().y);
     
     if (currentHeight <= 0) return 1.f;
     
@@ -130,7 +190,7 @@ void Enemy::update(float dt, Player& player) {
                     // Mostrar textura idle al girar
                     if (mTextures.idle) {
                         mSprite.setTexture(*mTextures.idle, true);
-                        float scale = getTextureScale();
+                        float scale = getTextureScaleFor(mTextures.idle);
                         mSprite.setScale(mMovingRight ? -scale : scale, scale);
                         updateOrigin();
                     }
@@ -142,7 +202,7 @@ void Enemy::update(float dt, Player& player) {
                     
                     if (mTextures.idle) {
                         mSprite.setTexture(*mTextures.idle, true);
-                        float scale = getTextureScale();
+                        float scale = getTextureScaleFor(mTextures.idle);
                         mSprite.setScale(mMovingRight ? -scale : scale, scale);
                         updateOrigin();
                     }
@@ -193,7 +253,7 @@ void Enemy::update(float dt, Player& player) {
                         // Cambiar textura a disparo
                         if (mTextures.shoot) {
                             mSprite.setTexture(*mTextures.shoot, true);
-                            float scale = getTextureScale();
+                            float scale = getTextureScaleFor(mTextures.shoot);
                             mSprite.setScale(mMovingRight ? scale : -scale, scale);
                             updateOrigin();
                         }
@@ -257,21 +317,29 @@ void Enemy::update(float dt, Player& player) {
                         mDeathTimer = 0.f;
                         mDeathFrame++;
                         
-                        float scale = getTextureScale();
                         if (mDeathFrame == 1 && mTextures.death2) {
                             mSprite.setTexture(*mTextures.death2, true);
+                            float scale = getTextureScaleFor(mTextures.death2);
                             mSprite.setScale(mMovingRight ? scale : -scale, scale);
-                            updateOrigin();
+                            // Origen diferente para cada tipo de policía
+                            sf::FloatRect bounds = mSprite.getLocalBounds();
+                            if (mType == EnemyType::POLICE1) {
+                                // Policía 1: bajar más (origen más arriba en la imagen)
+                                mSprite.setOrigin(bounds.width / 2.f, bounds.height * 1.1f);
+                            } else if (mType == EnemyType::POLICE2) {
+                                // Policía 2: subir un poco (origen más abajo en la imagen)
+                                mSprite.setOrigin(bounds.width / 2.f, bounds.height * 0.9f);
+                            } else {
+                                updateOrigin();
+                            }
                         } else if (mDeathFrame == 2 && mTextures.dead) {
                             // Textura final de muerto (acostado)
                             mSprite.setTexture(*mTextures.dead, true);
                             // Escala proporcional para la textura acostada
-                            float deadScale = scale * 0.8f;  // Ajustar tamaño
-                            mSprite.setScale(mMovingRight ? deadScale : -deadScale, deadScale);
-                            // Origen especial: centro-abajo pero ajustado para imagen horizontal
-                            sf::FloatRect bounds = mSprite.getLocalBounds();
-                            mSprite.setOrigin(bounds.width / 2.f, bounds.height);
-                            // Ajustar posición para que quede al nivel del suelo (sin mover)
+                            float scale = getTextureScaleFor(mTextures.dead);
+                            mSprite.setScale(mMovingRight ? scale : -scale, scale);
+                            // Usar mismo origen que caminar (centro-abajo)
+                            updateOrigin();
                         } else if (mDeathFrame >= 3) {
                             // Animación terminada, iniciar parpadeo
                             mDeathTimer = 0.f;
@@ -332,9 +400,20 @@ void Enemy::updateAnimation(float dt) {
         sf::Texture* tex = mIsWalkFrame1 ? mTextures.walk1 : mTextures.walk2;
         if (tex) {
             mSprite.setTexture(*tex, true);
-            float scale = getTextureScale();
+            float scale = getTextureScaleFor(tex);
             mSprite.setScale(mMovingRight ? scale : -scale, scale);
-            updateOrigin();
+            // Ajustar origen para que ambos frames tengan la misma posición de pies
+            sf::FloatRect bounds = mSprite.getLocalBounds();
+            // walk2 necesita origen especial si tiene diferente altura
+            if (!mIsWalkFrame1 && mTextures.walk1) {
+                // Calcular la diferencia de altura escalada
+                float walk1Height = mTextures.walk1->getSize().y * scale;
+                float walk2Height = bounds.height * scale;
+                float diff = (walk1Height - walk2Height) / scale;
+                mSprite.setOrigin(bounds.width / 2.f, bounds.height + diff);
+            } else {
+                mSprite.setOrigin(bounds.width / 2.f, bounds.height);
+            }
         }
     }
 }
@@ -447,13 +526,13 @@ void Enemy::kill() {
     // Cambiar textura al primer frame de muerte (si existe)
     if (mTextures.death1) {
         mSprite.setTexture(*mTextures.death1, true);
-        float scale = getTextureScale();
+        float scale = getTextureScaleFor(mTextures.death1);
         mSprite.setScale(mMovingRight ? scale : -scale, scale);
         updateOrigin();
     } else if (mTextures.dead) {
         // Si no hay animación de muerte, ir directo al frame final
         mSprite.setTexture(*mTextures.dead, true);
-        float scale = getTextureScale() * 0.8f;
+        float scale = getTextureScaleFor(mTextures.dead);
         mSprite.setScale(mMovingRight ? scale : -scale, scale);
         updateOrigin();
     }

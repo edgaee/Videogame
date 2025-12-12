@@ -72,6 +72,8 @@ private:
     sf::Texture mTexPolice2_Walk2;
     sf::Texture mTexPolice2_Aim;
     sf::Texture mTexPolice2_Shoot;
+    sf::Texture mTexPolice2_Death1;
+    sf::Texture mTexPolice2_Death2;
     sf::Texture mTexPolice2_Dead;
     
     // Boss - Doakes

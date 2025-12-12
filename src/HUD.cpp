@@ -22,7 +22,7 @@ HUD::HUD() {
         mBloodSlideTexture.loadFromImage(img);
     }
     mBloodSlideSprite.setTexture(mBloodSlideTexture);
-    mBloodSlideSprite.setScale(0.25f, 0.25f); // Escala mayor para mejor visibilidad
+    mBloodSlideSprite.setScale(0.5f, 0.5f); // Mismo tamaño que en el juego
 }
 
 void HUD::draw(sf::RenderWindow& window, int lives, int bloodSlides) {
@@ -42,9 +42,10 @@ void HUD::draw(sf::RenderWindow& window, int lives, int bloodSlides) {
     
     // === BLOOD SLIDES (Esquina Superior Derecha) ===
     float windowWidth = static_cast<float>(window.getSize().x);
-    float slidesStartX = windowWidth - 40.f; // Desde la derecha
+    sf::FloatRect slideBounds = mBloodSlideSprite.getGlobalBounds();
+    float slidesStartX = windowWidth - slideBounds.width - 20.f; // Desde la derecha con margen
     float slidesStartY = 20.f;
-    float slidesSpacing = 60.f;
+    float slidesSpacing = slideBounds.width + 10.f; // Espaciado basado en tamaño
     
     // Dibujar de derecha a izquierda
     for (int i = 0; i < bloodSlides; ++i) {
