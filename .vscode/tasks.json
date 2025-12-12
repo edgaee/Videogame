@@ -1,0 +1,34 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "type": "cppbuild",
+            "label": "Compilar Juego Dexter",
+            "command": "g++",
+            "args": [
+                "-fdiagnostics-color=always",
+                "-g",
+                "${workspaceFolder}/src/main.cpp",   // <--- Archivo 1
+                "${workspaceFolder}/src/Game.cpp",   // <--- Archivo 2
+				"${workspaceFolder}/src/Player.cpp", // <--- Archivo 3
+                "-I${workspaceFolder}/include",
+                "-o",
+                "${workspaceFolder}/bin/dexter_game.exe",
+                "-lsfml-graphics",
+                "-lsfml-window",
+                "-lsfml-system"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": [
+                "$gcc"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "detail": "Compilación manual de archivos"
+        }
+    ]
+}
